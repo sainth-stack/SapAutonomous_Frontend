@@ -1,0 +1,377 @@
+/* Desktop Styles (Unchanged) */
+.container-data {
+  padding: 0% !important;
+  /* padding: 20px; */
+  background: #000;
+  font-family: Arial, sans-serif;
+  background-color: rgb(128, 128, 210);
+}
+
+.explore {
+  font-size: 2em;
+  margin-bottom: 10px;
+  color: white;
+}
+
+.list {
+  font-size: 1.2em;
+  margin-bottom: 20px;
+  color: white;
+}
+
+.All {
+  margin-left: 20px;
+}
+
+.input {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 20px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  box-sizing: border-box;
+}
+
+.filter-container {
+  display: flex;
+  padding: 10px;
+}
+
+.filter-section {
+  width: 30%;
+  padding: 20px;
+  border-right: 1px solid #ddd;
+  border-top: 1px solid #ddd;
+  box-sizing: border-box;
+}
+
+.filter-section h3 {
+  margin-bottom: 20px;
+  color: #333;
+}
+
+.filter-section h4 {
+  margin-top: 20px;
+  color: #333;
+}
+
+.filter-search {
+  width: 100%;
+  padding: 8px;
+  margin-bottom: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  box-sizing: border-box;
+}
+
+.checkbox-group label {
+  display: flex !important;
+  justify-content: flex-start;
+  align-items: center;
+  /* Align the checkbox and text vertically */
+  margin-bottom: 10px !important;
+  color: #555;
+}
+
+.checkbox-group input[type="checkbox"] {
+  width: 16px;
+  /* Set a fixed width for the checkbox */
+  height: 16px;
+  /* Set a fixed height for the checkbox */
+}
+
+.agents-section {
+  width: 75%;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.agents-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.view-switch {
+  display: flex;
+}
+
+.name {
+  text-transform: capitalize;
+}
+
+.view-button {
+  background-color: #f0f0f0;
+  border: 1px solid #ccc;
+  padding: 5px 10px;
+  margin-right: 5px;
+  cursor: pointer;
+  border-radius: 5px;
+  color: #333;
+}
+
+.view-button.active {
+  background-color: #007bff;
+  color: #fff;
+  border-color: #007bff;
+}
+
+.sort-select {
+  padding: 5px 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  box-sizing: border-box;
+}
+
+.agents-list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.agent-card {
+  display: flex;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  background-color: #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  align-items: center;
+}
+
+.agent-image {
+  width: 50px;
+  height: 50px;
+  margin-right: 20px;
+  border-radius: 50%;
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.1);
+}
+
+.agent-info {
+  display: flex;
+  flex-direction: row;
+  justify-content: start;
+  align-items: center;
+  /* width: calc(100% - 70px); */
+}
+
+.agent-info h3 {
+  margin: 0;
+  font-size: 1.2em;
+  color: #333;
+}
+
+.agent-info p {
+  margin: 5px 0;
+  font-size: 0.9em;
+  color: #666;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.tag {
+  margin-right: 10px;
+  padding: 2px 5px;
+  border-radius: 5px;
+  font-size: 0.8em;
+  display: flex;
+  align-items: center;
+  gap: 4px
+}
+
+.tag.freemium {
+  background-color: #e7f3ff;
+  color: #007bff;
+}
+
+.tag.free {
+  background-color: #e4f3e8;
+  color: rgb(56, 56, 238);
+}
+
+.tag paid {
+  background-color: tomato;
+  color: #da3535;
+}
+
+.tag.category {
+  background-color: #ffe7e7;
+  color: #fabec4;
+}
+
+.turn {
+  background-color: #ddd8d8;
+  padding: 1px 5px;
+  border-radius: 7px;
+  color: #ab4646;
+  margin-left: 5px;
+  display: flex;
+  align-items: center;
+  gap: 4px
+}
+
+.tag.likes {
+  background-color: #fff5e7;
+  color: #ffc107;
+}
+
+/* Mobile Styles */
+@media screen and (max-width: 768px) {
+  .filter-container {
+    flex-direction: column;
+  }
+
+  .filter-section {
+    width: 100%;
+    margin-bottom: 20px;
+    border-right: none;
+    border-bottom: 1px solid #ddd;
+  }
+
+  .agents-section {
+    width: 100%;
+  }
+
+  .agents-list {
+    grid-template-columns: 1fr;
+  }
+
+  .agent-card {
+    flex-direction: row;
+    /* Keep image and text side by side */
+    align-items: center;
+  }
+
+  .agent-image {
+    width: 50px;
+    height: 50px;
+    margin-right: 15px;
+    margin-bottom: 0;
+    /* Remove bottom margin */
+  }
+
+  .agent-info {
+    width: calc(100% - 70px);
+  }
+
+  .explore {
+    font-size: 1.5em;
+    text-align: center;
+  }
+
+  .list {
+    font-size: 1em;
+    text-align: center;
+  }
+
+  .input {
+    width: 100%;
+  }
+
+  .view-switch,
+  .sort-dropdown {
+    justify-content: center;
+    width: 100%;
+    margin-bottom: 10px;
+  }
+
+  .view-button {
+    flex: 1;
+  }
+}
+
+.huu {
+  margin-left: px;
+}
+
+
+.agent-card {
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+  padding: 20px;
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  max-width: 100%;
+  margin: 15px;
+
+  &:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+  }
+
+  .agent-image {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    margin-bottom: 15px;
+    object-fit: cover;
+    border: 3px solid #eaeaea;
+  }
+
+  .agent-info {
+    text-align: start;
+    width: 100%;
+
+    .name {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: #333333;
+      margin: 0;
+      margin-bottom: 8px;
+    }
+
+    .tag-line {
+      width: 100%;
+    }
+
+    p {
+      color: #777777;
+      font-size: 0.9rem;
+      margin: 0;
+      margin-bottom: 15px;
+    }
+
+    .tag {
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: #555555;
+      padding: 4px 8px;
+      border-radius: 20px;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      margin: 0 5px;
+    }
+
+    .free {
+      background-color: #e0f7fa;
+      color: #00796b;
+    }
+
+    .turn {
+      background-color: #fce4ec;
+      color: #c2185b;
+    }
+
+    .hello {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      color: #1976d2;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: color 0.3s ease;
+
+      &:hover {
+        color: #0d47a1;
+      }
+    }
+  }
+}

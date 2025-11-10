@@ -1,0 +1,43 @@
+.footer {
+  background-color: black;
+  color: white;
+  height: 350px;
+  padding: 50px;
+}
+
+.Email {
+  width: 300px;
+  border-radius: 10px;
+  height: 47px;
+  margin-left: 90px;
+  padding: 10px;
+  font-size: 1rem;
+  color: #333333; /* Text color for visibility */
+  background-color: #ffffff; /* Light background for better contrast */
+  border: 1px solid #dddddd; /* Subtle border */
+  outline: none;
+  transition: border-color 0.3s ease;
+
+  /* Placeholder styling */
+  &::placeholder {
+    color: #888888; /* Lighter color for placeholder */
+    opacity: 0.8;
+  }
+
+  /* Focus state */
+  &:focus {
+    border-color: #00bfff; /* Highlighted border color on focus */
+    box-shadow: 0 0 5px rgba(0, 191, 255, 0.3); /* Subtle shadow on focus */
+  }
+}
+
+.button {
+  background-color: greenyellow;
+  display: flex;
+  align-items: center;
+  border-radius: 10px;
+  padding: 10px;
+  padding-left: 17px;
+  padding-right: 25px;
+  cursor: pointer;
+}
