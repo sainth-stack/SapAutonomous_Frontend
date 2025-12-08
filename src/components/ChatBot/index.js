@@ -65,16 +65,22 @@ const ChatBot = ({
       let apiEndpoint, requestBody, headers, response, data;
 
       if (isKnowledgeBase) {
-        // Route KB queries to internal vector search API with SAP-style response formatting
-        const formData = new FormData();
-        formData.append('query', userMessage);
-        formData.append('kb_format', 'true');
+        // Route KB queries to provided endpoint (supports absolute URL) with JSON body
+        const isAbsolute = typeof endpoint === 'string' && /^https?:\/\//i.test(endpoint);
+        apiEndpoint = isAbsolute
+          ? endpoint
+          : (baseURL + (endpoint || '/vector_search/'));
 
-        apiEndpoint = baseURL + '/vector_search/';
+        headers = {
+          'Content-Type': 'application/json',
+          'Accept': '*/*'
+        };
+        requestBody = JSON.stringify({ query: userMessage });
 
         response = await fetch(apiEndpoint, {
           method: 'POST',
-          body: formData,
+          headers,
+          body: requestBody
         });
       } else {
         // Original API configuration

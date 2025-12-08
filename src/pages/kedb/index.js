@@ -56,34 +56,34 @@ const KEDB = () => {
     );
   }
 
-  if (!hasUploadedFile) {
-    return (
-      <div className="min-h-screen bg-gray-100 flex justify-center items-center p-6">
-        <div className="w-full max-w-md bg-white rounded-xl shadow-lg p-8 text-center">
-          <div className="flex justify-center mb-4">
-            <svg className="h-12 w-12 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-            </svg>
-          </div>
-          <h2 className="text-xl font-bold text-gray-800 mb-2">No Data Available</h2>
-          <p className="text-gray-600 mb-6">Please upload data to analyze before using the Knowledge Base.</p>
-          <button
-            onClick={() => window.location.href = '/data-source'}
-            className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors duration-200 font-semibold"
-          >
-            Upload Data
-          </button>
-        </div>
-      </div>
-    );
-  }
+  // if (!hasUploadedFile) {
+  //   return (
+  //     <div className="min-h-screen bg-gray-100 flex justify-center items-center p-6">
+  //       <div className="w-full max-w-md bg-white rounded-xl shadow-lg p-8 text-center">
+  //         <div className="flex justify-center mb-4">
+  //           <svg className="h-12 w-12 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+  //             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+  //           </svg>
+  //         </div>
+  //         <h2 className="text-xl font-bold text-gray-800 mb-2">No Data Available</h2>
+  //         <p className="text-gray-600 mb-6">Please upload data to analyze before using the Knowledge Base.</p>
+  //         <button
+  //           onClick={() => window.location.href = '/data-source'}
+  //           className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors duration-200 font-semibold"
+  //         >
+  //           Upload Data
+  //         </button>
+  //       </div>
+  //     </div>
+  //   );
+  // }
 
   return (
     <ChatBot
       title="Knowledge Base Search"
       subtitle="Search for solutions to similar incidents and issues"
       placeholder="Ask about errors, issues, or search for solutions..."
-      endpoint="/vector_search/"
+      endpoint="https://ams-vectorizer.cfapps.us10-001.hana.ondemand.com/v3/lux/similar-tickets/query"
       initialMessage="Hello! I'm your Knowledge Base assistant. Ask me about any errors, incidents, or issues you need help with. I can search through historical data to find similar cases and solutions."
       showFileInfo={false}
       showRecentChats={true}
