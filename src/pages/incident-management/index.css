@@ -437,7 +437,7 @@ body {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.9rem;
-  table-layout: fixed;
+  table-layout: auto;
 }
 
 .data-table th {
@@ -451,7 +451,10 @@ body {
   top: 0;
   z-index: 10;
   white-space: nowrap;
-  width: auto;
+  vertical-align: middle;
+  box-sizing: border-box;
+  max-width: 150px;
+  text-transform: none;
 }
 
 .data-table td {
@@ -461,7 +464,16 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  width: auto;
+  vertical-align: middle;
+  text-align: left;
+  box-sizing: border-box;
+  max-width: 150px;
+}
+
+.data-table th,
+.data-table td {
+  border-left: none;
+  border-right: none;
 }
 
 .data-table tr:hover {

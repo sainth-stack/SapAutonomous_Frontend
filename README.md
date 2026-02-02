@@ -1,4 +1,4 @@
-# BAInocular based SLA Breach Monitoring & Analysis Dashboard
+# SLA Breach Monitoring & Analysis Dashboard
 
 A comprehensive React-based dashboard for monitoring, analyzing, and managing Service Level Agreement (SLA) performance with AI-powered insights and reporting capabilities.
 

@@ -44,6 +44,8 @@ export default function Sidebar() {
     incidentManagement: false,
     troubleshooting: false,
     batchPerformance: false,
+    processMonitor: false,
+    systemMonitoring: false,
     resourceEffectiveness: false,
     areasOfImprovement: false,
     potentialAutomation: false,
@@ -193,17 +195,61 @@ export default function Sidebar() {
                   </div>
                   {expandedSections.batchPerformance && (
                     <ul className="subsection-list">
-                      <li className={`sidebar-item subsection ${location.pathname === "/batch-failures" ? "active" : ""}`}>
-                        <Link to="/batch-failures" className="sidebar-link">
-                          <MdError size={14} className="link-icon" />
-                          <span className="link-text">% of failures</span>
-                        </Link>
+                      {/* Process Monitor Section */}
+                      <li className="sidebar-section">
+                        <div 
+                          className="section-header" 
+                          onClick={() => toggleSection('processMonitor')}
+                          role="button"
+                          tabIndex={0}
+                        >
+                          <div className="header-content">
+                            <MdSpeed size={14} className="section-icon" />
+                            <span className="section-title">Process Monitoring</span>
+                          </div>
+                          {expandedSections.processMonitor ? 
+                            <RiArrowDownSLine size={14} className="chevron-icon" /> : 
+                            <RiArrowRightSLine size={14} className="chevron-icon" />
+                          }
+                        </div>
+                        {expandedSections.processMonitor && (
+                          <ul className="subsection-list">
+                            <li className={`sidebar-item subsection ${location.pathname === "/process-monitor/thanksgiving" ? "active" : ""}`}>
+                              <Link to="/process-monitor/thanksgiving" className="sidebar-link">
+                                <MdEventNote size={14} className="link-icon" />
+                                <span className="link-text">Thanks Giving</span>
+                              </Link>
+                            </li>
+                          </ul>
+                        )}
                       </li>
-                      <li className={`sidebar-item subsection ${location.pathname === "/batch-resolution-time" ? "active" : ""}`}>
-                        <Link to="/batch-resolution-time" className="sidebar-link">
-                          <MdSchedule size={14} className="link-icon" />
-                          <span className="link-text">Resolution time and trend</span>
-                        </Link>
+                      {/* System Monitoring Section */}
+                      <li className="sidebar-section">
+                        <div 
+                          className="section-header" 
+                          onClick={() => toggleSection('systemMonitoring')}
+                          role="button"
+                          tabIndex={0}
+                        >
+                          <div className="header-content">
+                            <MdVisibility size={14} className="section-icon" />
+                            <span className="section-title">System Monitoring</span>
+                          </div>
+                          {expandedSections.systemMonitoring ? 
+                            <RiArrowDownSLine size={14} className="chevron-icon" /> : 
+                            <RiArrowRightSLine size={14} className="chevron-icon" />
+                          }
+                        </div>
+                        {expandedSections.systemMonitoring && (
+                          <ul className="subsection-list">
+                            <li className={`sidebar-item subsection ${location.pathname === "/system-monitoring/sap-system" ? "active" : ""}`}>
+                              <Link to="/system-monitoring/sap-system" className="sidebar-link">
+                                <MdStorage size={14} className="link-icon" />
+                                <span className="link-text">SAP System</span>
+                              </Link>
+                            </li>
+                          </ul>
+                        )}
                       </li>
                     </ul>
                   )}
@@ -250,7 +296,7 @@ export default function Sidebar() {
                   )}
                 </li>
 
-                {/* Trouble Shooting Assistance Section */}
+                {/* Troubleshooting Assistance Section */}
                 <li className="sidebar-section">
                   <div 
                     className="section-header" 
@@ -260,7 +306,7 @@ export default function Sidebar() {
                   >
                     <div className="header-content">
                       <MdBuild size={16} className="section-icon" />
-                      <span className="section-title">Trouble Shooting Assist...</span>
+                      <span className="section-title">Troubleshooting Assist...</span>
                     </div>
                     {expandedSections.troubleshooting ? 
                       <RiArrowDownSLine size={14} className="chevron-icon" /> : 

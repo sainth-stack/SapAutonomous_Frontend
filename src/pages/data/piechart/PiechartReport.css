@@ -81,7 +81,7 @@ body {
   font-weight: 500;
   color: var(--dark-2);
   font-size: 0.8125rem;
-  text-transform: uppercase;
+  /* text-transform: uppercase; */
   letter-spacing: 0.5px;
 }
 
