@@ -174,7 +174,7 @@ export default function Sidebar() {
                   )}
                 </li>
 
-                {/* Batch Performance Section */}
+                {/* Performance Monitoring Section */}
                 <li className="sidebar-section">
                   <div 
                     className="section-header" 
@@ -184,7 +184,7 @@ export default function Sidebar() {
                   >
                     <div className="header-content">
                       <MdBarChart size={16} className="section-icon" />
-                      <span className="section-title">Batch Performance</span>
+                      <span className="section-title">Performance Monitoring</span>
                     </div>
                     {expandedSections.batchPerformance ? 
                       <RiArrowDownSLine size={14} className="chevron-icon" /> : 
@@ -196,7 +196,7 @@ export default function Sidebar() {
                       <li className={`sidebar-item subsection ${location.pathname === "/process-monitor/thanksgiving" ? "active" : ""}`}>
                         <Link to="/process-monitor/thanksgiving" className="sidebar-link">
                           <MdSpeed size={14} className="link-icon" />
-                          <span className="link-text">Process Monitoring</span>
+                          <span className="link-text">Batch Monitoring</span>
                         </Link>
                       </li>
                       <li className={`sidebar-item subsection ${location.pathname === "/system-monitoring" ? "active" : ""}`}>
@@ -285,7 +285,7 @@ export default function Sidebar() {
                   )}
                 </li>
 
-                {/* Areas of Improvement Section */}
+                {/* Value Creation Section */}
                 <li className="sidebar-section">
                   <div 
                     className="section-header" 
@@ -295,7 +295,7 @@ export default function Sidebar() {
                   >
                     <div className="header-content">
                       <MdTrendingUp size={16} className="section-icon" />
-                      <span className="section-title">Areas of improvement</span>
+                      <span className="section-title">Value Creation</span>
                     </div>
                     {expandedSections.areasOfImprovement ? 
                       <RiArrowDownSLine size={14} className="chevron-icon" /> : 

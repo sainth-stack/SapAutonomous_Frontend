@@ -32,7 +32,7 @@ function App() {
             <Route path="/incidents-recurring" element={<ComingSoon />} />
             <Route path="/incidents-auto-assignment" element={<ComingSoon />} />
 
-            {/* Batch Performance Section */}
+            {/* Performance Monitoring Section */}
             <Route path="/process-monitor/thanksgiving" element={<ComingSoon />} />
             <Route path="/system-monitoring" element={<SystemMonitoring />} />
             <Route path="/system-monitoring/sap-system" element={<ComingSoon />} />
@@ -45,7 +45,7 @@ function App() {
             {/* Troubleshooting Assistance Section */}
             <Route path="/web-suggested-actions" element={<ComingSoon />} />
 
-            {/* Areas of Improvement Section */}
+            {/* Value Creation Section */}
             <Route path="/preventive-measures" element={<ComingSoon />} />
             <Route path="/self-service-actions" element={<ComingSoon />} />
 
