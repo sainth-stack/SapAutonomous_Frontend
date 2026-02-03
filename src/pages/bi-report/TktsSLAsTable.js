@@ -1,28 +1,29 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { baseURL } from '../../const';
 import '../data/table-report/TableReport.css';
 
-const TktsSLAsTable = () => {
+const TktsSLAsTable = ({ dateFilter }) => {
   const [tableData, setTableData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    fetchTabData();
-  }, []);
-
-  const fetchTabData = async () => {
+  const fetchTabData = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${baseURL}/sla_tabs/Tkts_SLAs_Table`);
-      
+      let url = `${baseURL}/sla_tabs/Tkts_SLAs_Table`;
+      if (dateFilter) {
+        const params = new URLSearchParams();
+        if (dateFilter.range != null) params.set('range', dateFilter.range);
+        if (dateFilter.start_month) params.set('start_month', dateFilter.start_month);
+        if (dateFilter.end_month) params.set('end_month', dateFilter.end_month);
+        if (params.toString()) url += `?${params.toString()}`;
+      }
+      const response = await axios.get(url);
       const data = response.data;
-      
       if (data.table_data) {
         setTableData(data.table_data);
       }
-      
       setError(null);
     } catch (err) {
       console.error('Error fetching tab data:', err);
@@ -31,7 +32,11 @@ const TktsSLAsTable = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [dateFilter]);
+
+  useEffect(() => {
+    fetchTabData();
+  }, [fetchTabData]);
 
   const requestPriorities = [
     'P1 - Critical',

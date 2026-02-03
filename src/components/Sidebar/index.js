@@ -44,8 +44,6 @@ export default function Sidebar() {
     incidentManagement: false,
     troubleshooting: false,
     batchPerformance: false,
-    processMonitor: false,
-    systemMonitoring: false,
     resourceEffectiveness: false,
     areasOfImprovement: false,
     potentialAutomation: false,
@@ -195,61 +193,17 @@ export default function Sidebar() {
                   </div>
                   {expandedSections.batchPerformance && (
                     <ul className="subsection-list">
-                      {/* Process Monitor Section */}
-                      <li className="sidebar-section">
-                        <div 
-                          className="section-header" 
-                          onClick={() => toggleSection('processMonitor')}
-                          role="button"
-                          tabIndex={0}
-                        >
-                          <div className="header-content">
-                            <MdSpeed size={14} className="section-icon" />
-                            <span className="section-title">Process Monitoring</span>
-                          </div>
-                          {expandedSections.processMonitor ? 
-                            <RiArrowDownSLine size={14} className="chevron-icon" /> : 
-                            <RiArrowRightSLine size={14} className="chevron-icon" />
-                          }
-                        </div>
-                        {expandedSections.processMonitor && (
-                          <ul className="subsection-list">
-                            <li className={`sidebar-item subsection ${location.pathname === "/process-monitor/thanksgiving" ? "active" : ""}`}>
-                              <Link to="/process-monitor/thanksgiving" className="sidebar-link">
-                                <MdEventNote size={14} className="link-icon" />
-                                <span className="link-text">Thanks Giving</span>
-                              </Link>
-                            </li>
-                          </ul>
-                        )}
+                      <li className={`sidebar-item subsection ${location.pathname === "/process-monitor/thanksgiving" ? "active" : ""}`}>
+                        <Link to="/process-monitor/thanksgiving" className="sidebar-link">
+                          <MdSpeed size={14} className="link-icon" />
+                          <span className="link-text">Process Monitoring</span>
+                        </Link>
                       </li>
-                      {/* System Monitoring Section */}
-                      <li className="sidebar-section">
-                        <div 
-                          className="section-header" 
-                          onClick={() => toggleSection('systemMonitoring')}
-                          role="button"
-                          tabIndex={0}
-                        >
-                          <div className="header-content">
-                            <MdVisibility size={14} className="section-icon" />
-                            <span className="section-title">System Monitoring</span>
-                          </div>
-                          {expandedSections.systemMonitoring ? 
-                            <RiArrowDownSLine size={14} className="chevron-icon" /> : 
-                            <RiArrowRightSLine size={14} className="chevron-icon" />
-                          }
-                        </div>
-                        {expandedSections.systemMonitoring && (
-                          <ul className="subsection-list">
-                            <li className={`sidebar-item subsection ${location.pathname === "/system-monitoring/sap-system" ? "active" : ""}`}>
-                              <Link to="/system-monitoring/sap-system" className="sidebar-link">
-                                <MdStorage size={14} className="link-icon" />
-                                <span className="link-text">SAP System</span>
-                              </Link>
-                            </li>
-                          </ul>
-                        )}
+                      <li className={`sidebar-item subsection ${location.pathname === "/system-monitoring" ? "active" : ""}`}>
+                        <Link to="/system-monitoring" className="sidebar-link">
+                          <MdVisibility size={14} className="link-icon" />
+                          <span className="link-text">System/Application Monitoring</span>
+                        </Link>
                       </li>
                     </ul>
                   )}

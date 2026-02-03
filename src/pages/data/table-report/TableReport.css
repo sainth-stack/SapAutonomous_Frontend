@@ -379,3 +379,13 @@
     background: #2563eb;
   }
   */
+
+/* Compact chart layout (no extra gap above chart) */
+.table-report-container.tkts-sla-chart-compact {
+  padding-top: 0;
+}
+
+.tkts-sla-chart-wrapper {
+  width: 100%;
+  min-height: 0;
+}

@@ -10,6 +10,7 @@ import ComingSoon from "./pages/ComingSoon";
 import BIReport from "./pages/bi-report";
 import SLACombined from "./pages/sla-combined";
 import ResourceEffectivenessConsultant from "./pages/resource-effectiveness-consultant";
+import SystemMonitoring from "./pages/system-monitoring";
 
 function App() {
   return (
@@ -33,6 +34,7 @@ function App() {
 
             {/* Batch Performance Section */}
             <Route path="/process-monitor/thanksgiving" element={<ComingSoon />} />
+            <Route path="/system-monitoring" element={<SystemMonitoring />} />
             <Route path="/system-monitoring/sap-system" element={<ComingSoon />} />
 
             {/* Resource Effectiveness Section */}
