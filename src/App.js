@@ -4,13 +4,14 @@ import SelfMonitoring from "./pages/self-monitoring";
 import IncidentManagement from "./pages/incident-management";
 import KEDB from "./pages/kedb";
 import DataSource from "./pages/data-source";
-import {AdminLayout} from './layout'
+import { AdminLayout } from './layout'
 import { MainPages } from "./pages/data";
 import ComingSoon from "./pages/ComingSoon";
 import BIReport from "./pages/bi-report";
 import SLACombined from "./pages/sla-combined";
 import ResourceEffectivenessConsultant from "./pages/resource-effectiveness-consultant";
 import SystemMonitoring from "./pages/system-monitoring";
+import BatchMonitor from "./pages/batch-monitor";
 
 function App() {
   return (
@@ -33,7 +34,7 @@ function App() {
             <Route path="/incidents-auto-assignment" element={<ComingSoon />} />
 
             {/* Performance Monitoring Section */}
-            <Route path="/process-monitor/thanksgiving" element={<ComingSoon />} />
+            <Route path="/process-monitor/thanksgiving" element={<BatchMonitor />} />
             <Route path="/system-monitoring" element={<SystemMonitoring />} />
             <Route path="/system-monitoring/sap-system" element={<ComingSoon />} />
 
