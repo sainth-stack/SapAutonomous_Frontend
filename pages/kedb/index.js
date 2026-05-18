@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ChatBot from '../../components/ChatBot';
 import { sendAppLog } from '../../utils/logger';
+import { vectorizerSimilarTicketsURL } from '../../const';
 import './index.css';
 
 // Page visit is logged globally from AdminLayout; this page only wires KB API success/error logs.
@@ -72,7 +73,7 @@ const KEDB = () => {
       title="Knowledge Base Search"
       subtitle="Search for solutions to similar incidents and issues"
       placeholder="Ask about errors, issues, or search for solutions..."
-      endpoint="https://ams-vectorizer.cfapps.us10-001.hana.ondemand.com/v3/lux/similar-tickets/query"
+      endpoint={vectorizerSimilarTicketsURL}
       initialMessage="Hello! I'm your Knowledge Base assistant. Ask me about any errors, incidents, or issues you need help with. I can search through historical data to find similar cases and solutions."
       showFileInfo={false}
       showRecentChats={true}

@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import './index.css';
 import FloatingChatBot from '../../components/ChatBot/FloatingChatBot';
 import axios from 'axios';
+import { classificationRecordsURL } from '../../const';
 
 // Classification API and cache keys (shared with Target Areas page)
-export const CLASSIFICATION_RECORDS_URL =
-  'https://ams-classifier.cfapps.us10-001.hana.ondemand.com/v1/classification/records';
+export const CLASSIFICATION_RECORDS_URL = classificationRecordsURL;
 export const CLASSIFICATION_RECORDS_CACHE_KEY = 'classification_records_cache_v1';
 export const CLASSIFICATION_TARGET_AREAS_CACHE_KEY = 'classification_target_areas_v1';
 

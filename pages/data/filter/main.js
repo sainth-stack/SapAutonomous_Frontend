@@ -1,8 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import TableReport from '../table-report/index';
 import '../table-report/TableReport.css'
+import { useReportData } from '../../../utils/apiHooks';
 
-const ReportViewer = ({ rawData, headerIndices }) => {
+const ReportViewer = () => {
   const [filters, setFilters] = useState({
     requestType: [], // Added Request Type filter
     creationDateFrom: null,
@@ -17,160 +18,17 @@ const ReportViewer = ({ rawData, headerIndices }) => {
     timeToBreachValue: ''
   });
 
-  // Constants for column indexes - using indexOf for dynamic lookup
-  const COLUMNS = {
-    CREATION_DATE: rawData[0].indexOf("Req. Creation Date"),
-    TICKET_ID: rawData[0].indexOf("Request - ID"),
-    PRIORITY: rawData[0].indexOf("Request - Priority Description"),
-    STATUS_FROM: rawData[0].indexOf("Historical Status - Status From"),
-    STATUS_TO: rawData[0].indexOf("Historical Status - Status To"),
-    STATUS_CHANGE_DATE: rawData[0].indexOf("Historical Status - Change Date"),
-    ASSIGNED_TO: rawData[0].indexOf("Request - Resource Assigned To - Name"),
-    CURRENT_STATUS: rawData[0].indexOf("Req. Status - Description"),
-    RESP_SLA: rawData[0].indexOf("RespSLA"),
-    ELAPSED_TIME: rawData[0].indexOf("ElapsedTime"),
-    CUMULATIVE: rawData[0].indexOf("Cumilative"),
-    resolSW: rawData[0].indexOf("ResolSOW"),
-    RESOL_REM: rawData[0].indexOf("ResolRem"),
-    MARCO: rawData[0].indexOf("Macro Area - Name"),
-    REQ_STATUS: rawData[0].indexOf("Req. Status - Description"),
-    RESOLUTION_DATE: rawData[0].indexOf("Req. Closing Date"),
-    REQUEST_TYPE: rawData[0].indexOf("Req. Type - Description EN"),
-    TEXT_REQUEST: rawData[0].indexOf("Request - Text Request"),
-  };
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
-  const processedData = useMemo(() => {
-    if (!rawData || rawData.length < 2) return [];
-  
-    const rows = rawData.slice(1);
-    const ticketGroups = {};
-  
-    rows.forEach(row => {
-      const ticketId = row[COLUMNS.TICKET_ID];
-      
-      if (!ticketGroups[ticketId]) {
-        ticketGroups[ticketId] = [];
-      }
-      ticketGroups[ticketId].push(row);
-    });
-  
-    return Object.values(ticketGroups).map(ticketRows => {
-      const lastRow = ticketRows[ticketRows.length - 1];
-      const creationDate =
-        ticketRows.find((row) => row[COLUMNS.CREATION_DATE])?.[COLUMNS.CREATION_DATE] ||
-        lastRow[COLUMNS.CREATION_DATE];
-      
-      const cumulativeValue = lastRow[COLUMNS.CUMULATIVE];
-      const elapsedValue = lastRow[COLUMNS.ELAPSED_TIME];
-      const ticketId = lastRow[COLUMNS.TICKET_ID];
-      
-      return {
-        ticketId,
-        creationDate,
-        priority: lastRow[COLUMNS.PRIORITY],
-        assignedTo: lastRow[COLUMNS.ASSIGNED_TO],
-        marconaName: lastRow[COLUMNS.MARCO],
-        textRequest:
-          COLUMNS.TEXT_REQUEST >= 0 && lastRow[COLUMNS.TEXT_REQUEST] != null
-            ? String(lastRow[COLUMNS.TEXT_REQUEST])
-            : '',
-        currentStatus: lastRow[COLUMNS.CURRENT_STATUS],
-        elapsedTime: cumulativeValue || elapsedValue || '0.00',
-        isBreached: parseFloat(lastRow[COLUMNS.RESOL_REM]) < 0,
-        status: lastRow[COLUMNS.REQ_STATUS],
-        resolutionDate: lastRow[COLUMNS.RESOLUTION_DATE],
-        timeToBreach: lastRow[COLUMNS.RESOL_REM],
-        totalTime:lastRow[COLUMNS.resolSW],
-        requestType: lastRow[COLUMNS.REQUEST_TYPE],
-        statusChanges: ticketRows.map(row => ({
-          from: row[COLUMNS.STATUS_FROM],
-          to: row[COLUMNS.STATUS_TO],
-          date: row[COLUMNS.STATUS_CHANGE_DATE]
-        }))
-      };
-    });
-  }, [rawData]);
-
-  // Filter data based on filters
-  const filteredData = useMemo(() => {
-    return processedData.filter((ticket) => {
-      // Creation date filter
-      function parseDDMMYYYY(dateStr) {
-        const [day, month, year] = dateStr.split('/');
-        return new Date(year, month - 1, day);
-      }
-      
-      if (filters.creationDateFrom) {
-        const ticketDate = parseDDMMYYYY(ticket.creationDate);
-        if (ticketDate < filters.creationDateFrom) return false;
-      }
-      if (filters.creationDateTo) {
-        const ticketDate = parseDDMMYYYY(ticket.creationDate);
-        if (ticketDate > filters.creationDateTo) return false;
-      }
-
-      // Add filter logic after the creation date filter and before priority filter
-      if (filters.requestType.length > 0 && !filters.requestType.includes(ticket.requestType)) return false;
-
-      // Priority filter
-      if (filters.priority.length > 0 && !filters.priority.includes(ticket.priority)) return false;
-
-      // Assigned to filter
-      if (filters.assignedTo.length > 0 && !filters.assignedTo.includes(ticket.assignedTo)) {
-        return false;
-      }
-
-      // Status filter
-      if (filters.status.length > 0 && !filters.status.includes(ticket.currentStatus)) return false;
-
-      // Breached filter
-      if (filters.breached.length > 0) {
-        const ticketBreached = ticket.isBreached ? 'true' : 'false';
-        if (!filters.breached.includes(ticketBreached)) return false;
-      }
-
-      // Macro Area filter
-      if (filters.marconaName.length > 0 && !filters.marconaName.includes(ticket.marconaName)) return false;
-
-      // Time to Breach filter
-      if (filters.timeToBreachValue) {
-        const ticketHours = parseFloat(ticket.timeToBreach);
-        const filterHours = parseFloat(filters.timeToBreachValue);
-
-        if (!isNaN(ticketHours) && !isNaN(filterHours)) {
-          switch (filters.timeToBreachOption) {
-            case 'eq':
-              if (ticketHours !== filterHours) return false;
-              break;
-            case 'lte':
-              if (ticketHours > filterHours) return false;
-              break;
-            case 'gte':
-              if (ticketHours < filterHours) return false;
-              break;
-          }
-        }
-      }
-
-      // Search text filter
-      if (filters.searchText) {
-        const searchLower = filters.searchText.toLowerCase();
-        const ticketText = Object.values(ticket).join(' ').toLowerCase();
-        if (!ticketText.includes(searchLower)) return false;
-      }
-
-      return true;
-    });
-  }, [processedData, filters]);
-
-  // Get unique values for filter dropdowns
-  const getUniqueValues = (property) => {
-    const values = new Set();
-    processedData.forEach(ticket => {
-      if (ticket[property]) values.add(ticket[property]);
-    });
-    return Array.from(values).sort();
-  };
+  // Use the backend API hook
+  const { data: reportData, isLoading, error } = useReportData(
+    filters,
+    sortConfig,
+    currentPage,
+    itemsPerPage
+  );
 
   // Handle filter changes
   const handleFilterChange = (filterName, value) => {
@@ -178,6 +36,7 @@ const ReportViewer = ({ rawData, headerIndices }) => {
       ...prev,
       [filterName]: value
     }));
+    setCurrentPage(1); // Reset to first page when filters change
   };
 
   // Reset all filters
@@ -195,16 +54,116 @@ const ReportViewer = ({ rawData, headerIndices }) => {
       timeToBreachOption: 'eq',
       timeToBreachValue: ''
     });
+    setCurrentPage(1);
   };
 
+  // Handle sort
+  const handleSort = (key) => {
+    let direction = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+    setCurrentPage(1); // Reset to first page when sort changes
+  };
+
+  // Get unique values from facets for filter dropdowns
+  const getUniqueValues = (property) => {
+    if (!reportData?.facets) return [];
+    return reportData.facets[property] || [];
+  };
+
+  if (isLoading && !reportData) {
+    return (
+      <div className="flex justify-center items-center p-16 min-h-[400px]">
+        <div className="text-center">
+          <svg
+            className="animate-spin h-12 w-12 text-indigo-600 mx-auto mb-4"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            ></circle>
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+            ></path>
+          </svg>
+          <p className="text-lg font-semibold text-gray-700">Loading Report Data</p>
+          <p className="text-sm text-gray-500 mt-2">Processing your SLA data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex justify-center items-center p-8 min-h-[300px]">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md">
+          <div className="flex items-center mb-2">
+            <svg className="h-6 w-6 text-red-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 18.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+            <h3 className="text-lg font-semibold text-red-800">Error Loading Data</h3>
+          </div>
+          <p className="text-red-600">{error.message}</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="combined-report-container">
+    <div className="combined-report-container relative">
+      {/* Overlay loading indicator when data exists but is being refreshed */}
+      {isLoading && reportData && (
+        <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10">
+          <div className="bg-white rounded-lg shadow-lg p-6 flex items-center space-x-3">
+            <svg
+              className="animate-spin h-6 w-6 text-indigo-600"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              ></circle>
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              ></path>
+            </svg>
+            <span className="text-gray-700 font-medium">Updating data...</span>
+          </div>
+        </div>
+      )}
+      
       <TableReport 
-        data={filteredData}
+        data={reportData?.tickets || []}
         filters={filters}
         onFilterChange={handleFilterChange}
         onResetFilters={resetFilters}
         getUniqueValues={getUniqueValues}
+        sortConfig={sortConfig}
+        onSort={handleSort}
+        currentPage={currentPage}
+        onPageChange={setCurrentPage}
+        totalPages={reportData?.total_pages || 1}
+        totalFiltered={reportData?.total_filtered || 0}
+        isLoading={isLoading}
       />
     </div>
   );

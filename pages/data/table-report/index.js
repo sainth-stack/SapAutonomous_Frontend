@@ -1,16 +1,39 @@
-import React, { useState, useMemo, useCallback } from 'react';
-import Papa from 'papaparse';
+import React, { useState, useEffect } from 'react';
 import SharedFilters from '../filter/sharedReport';
 import SearchModal from '../../../components/SearchModal';
+import { baseURL } from '../../../const';
+import { getStoredUser } from '../../../utils/authSession';
+
+const getUploadedFileInfo = () => {
+  try {
+    const uploadedFileInfo = localStorage.getItem('uploadedFile');
+    if (!uploadedFileInfo) return null;
+    const fileInfo = JSON.parse(uploadedFileInfo);
+    if (!fileInfo.name) return null;
+    return fileInfo;
+  } catch (error) {
+    console.error('Error parsing uploaded file info:', error);
+    return null;
+  }
+};
 
 const NUMERIC_SORT_KEYS = new Set(['totalTime', 'elapsedTime', 'timeToBreach']);
 
-const TableReport = ({ data, filters, onFilterChange, onResetFilters, getUniqueValues }) => {
-  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
-  const [currentPage, setCurrentPage] = useState(1);
+const TableReport = ({ data, filters, onFilterChange, onResetFilters, getUniqueValues, sortConfig, onSort, currentPage, onPageChange, totalPages, totalFiltered, isLoading }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState(null);
-  const itemsPerPage = 10;
+  const [isExporting, setIsExporting] = useState(false);
+  
+  // Debug: Log when data changes
+  useEffect(() => {
+    console.log('TableReport data updated:', {
+      dataLength: data?.length || 0,
+      currentPage,
+      totalPages,
+      isLoading,
+      firstTicket: data?.[0]?.ticketId
+    });
+  }, [data, currentPage, totalPages, isLoading]);
   const columns = [
     { key: 'ticketId', name: 'Ticket ID' },
     { key: 'creationDate', name: 'Creation Date' },
@@ -36,59 +59,6 @@ const TableReport = ({ data, filters, onFilterChange, onResetFilters, getUniqueV
     return {};
   };
 
-  const compareCellValues = useCallback((key, aRaw, bRaw) => {
-    if (NUMERIC_SORT_KEYS.has(key)) {
-      const na = parseFloat(aRaw);
-      const nb = parseFloat(bRaw);
-      const aValid = aRaw !== '' && aRaw != null && !Number.isNaN(na);
-      const bValid = bRaw !== '' && bRaw != null && !Number.isNaN(nb);
-      if (!aValid && !bValid) return 0;
-      if (!aValid) return 1;
-      if (!bValid) return -1;
-      if (na < nb) return -1;
-      if (na > nb) return 1;
-      return 0;
-    }
-    if (aRaw == null && bRaw == null) return 0;
-    if (aRaw == null) return 1;
-    if (bRaw == null) return -1;
-    if (typeof aRaw === 'boolean' || typeof bRaw === 'boolean') {
-      if (aRaw === bRaw) return 0;
-      return aRaw ? 1 : -1;
-    }
-    const as = String(aRaw);
-    const bs = String(bRaw);
-    return as.localeCompare(bs, undefined, { numeric: true, sensitivity: 'base' });
-  }, []);
-
-  // Sort data
-  const sortedData = useMemo(() => {
-    if (!sortConfig.key) return data;
-
-    return [...data].sort((a, b) => {
-      const cmp = compareCellValues(sortConfig.key, a[sortConfig.key], b[sortConfig.key]);
-      return sortConfig.direction === 'asc' ? cmp : -cmp;
-    });
-  }, [data, sortConfig, compareCellValues]);
-
-  // Pagination
-  const paginatedData = sortedData.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
-
-  const totalPages = Math.ceil(sortedData.length / itemsPerPage);
-
-  // Handle sort request
-  const requestSort = (key) => {
-    let direction = 'asc';
-    if (sortConfig.key === key && sortConfig.direction === 'asc') {
-      direction = 'desc';
-    }
-    setSortConfig({ key, direction });
-    setCurrentPage(1);
-  };
-
   // Get badge class based on value
   const getBadgeClass = (value) => {
     if (value === true) return 'badge-breached';
@@ -109,29 +79,46 @@ const TableReport = ({ data, filters, onFilterChange, onResetFilters, getUniqueV
     setIsModalOpen(true);
   };
 
-  const handleExportCsv = () => {
-    const rows = data.map((ticket) => ({
-      'Ticket ID': ticket.ticketId,
-      'Creation Date': ticket.creationDate,
-      Priority: ticket.priority,
-      'Assigned To': ticket.assignedTo,
-      'Macro Area - Name': ticket.marconaName,
-      'Request - Text Request': ticket.textRequest ?? '',
-      'Current Status': ticket.currentStatus,
-      'Resolution SLA Time': ticket.totalTime,
-      'Elapsed Time (h)': ticket.elapsedTime,
-      'Remaining Time': ticket.timeToBreach,
-      Breached: ticket.isBreached ? 'Yes' : 'No',
-      'Request Type': ticket.requestType ?? '',
-    }));
-    const csv = Papa.unparse(rows);
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `self-monitoring-export-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+  const handleExportCsv = async () => {
+    setIsExporting(true);
+    try {
+      const user = getStoredUser();
+      const fileInfo = getUploadedFileInfo();
+      const filename = fileInfo?.serverFilename || 'data1.csv';
+      
+      const body = {
+        filename,
+        email: user?.email,
+        name: user?.name,
+        filters,
+        sort: sortConfig
+      };
+
+      const response = await fetch(`${baseURL}/sla_breach/export_csv`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body)
+      });
+
+      if (!response.ok) {
+        throw new Error('Export failed');
+      }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `self-monitoring-export-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Export error:', error);
+      alert('Failed to export CSV. Please try again.');
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   return (
@@ -151,38 +138,115 @@ const TableReport = ({ data, filters, onFilterChange, onResetFilters, getUniqueV
       {/* Summary Info */}
       <div className="flex justify-between items-center p-4 bg-gray-50 border-b flex-wrap gap-2">
         <div className="text-sm text-gray-600" style={{fontWeight:600}}>
-          Showing {data.length} records
+          Showing {totalFiltered || 0} records
         </div>
         <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={handleExportCsv}
-            disabled={data.length === 0}
-            className="px-3 py-1.5 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            disabled={!data || data.length === 0 || isExporting || isLoading}
+            className="px-3 py-1.5 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
           >
-            Export CSV
+            {isExporting ? (
+              <>
+                <svg
+                  className="animate-spin h-4 w-4"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                Exporting...
+              </>
+            ) : (
+              'Export CSV'
+            )}
           </button>
-          <div className="text-sm font-medium text-gray-700">
-            Page {currentPage} of {totalPages}
+          <div className="text-sm font-medium text-gray-700 flex items-center gap-2">
+            {isLoading && (
+              <svg
+                className="animate-spin h-4 w-4 text-indigo-600"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                ></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
+              </svg>
+            )}
+            <span>Page {currentPage} of {totalPages}</span>
           </div>
         </div>
       </div>
 
       {/* Table */}
-      <div className="table-container">
-        <table className="data-table">
+      <div className="table-container relative">
+        {/* Loading overlay for table */}
+        {isLoading && (
+          <div className="absolute inset-0 bg-white bg-opacity-50 flex items-center justify-center z-10 rounded-lg">
+            <div className="bg-white rounded-lg shadow-md px-4 py-3 flex items-center space-x-2">
+              <svg
+                className="animate-spin h-5 w-5 text-indigo-600"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                ></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
+              </svg>
+              <span className="text-sm text-gray-700 font-medium">Loading...</span>
+            </div>
+          </div>
+        )}
+        
+        <table className="data-table" key={`page-${currentPage}-${data?.length || 0}`}>
           <thead>
             <tr>
               {columns.map((column) => (
                 <th 
                   key={column.key} 
                   onClick={() => {
-                    if (column.key !== 'similaritySearch' && column.key !== 'webSearch') {
-                      requestSort(column.key);
+                    if (column.key !== 'similaritySearch' && column.key !== 'webSearch' && !isLoading) {
+                      onSort(column.key);
                     }
                   }}
                   style={{
-                    cursor: column.key !== 'similaritySearch' && column.key !== 'webSearch' ? 'pointer' : 'default',
+                    cursor: column.key !== 'similaritySearch' && column.key !== 'webSearch' && !isLoading ? 'pointer' : 'default',
                     ...getColumnStyle(column.key),
                   }}
                 >
@@ -198,9 +262,10 @@ const TableReport = ({ data, filters, onFilterChange, onResetFilters, getUniqueV
               ))}
             </tr>
           </thead>
-          <tbody>
-            {paginatedData.map((ticket, index) => (
-              <tr key={index}>
+          <tbody style={{ opacity: isLoading ? 0.5 : 1, transition: 'opacity 0.2s' }}>
+            {data && data.length > 0 ? (
+              data.map((ticket, index) => (
+                <tr key={`${currentPage}-${ticket.ticketId}-${index}`}>
                 <td className="text-blue-600 font-medium">
                   {ticket.ticketId}
                 </td>
@@ -248,18 +313,55 @@ const TableReport = ({ data, filters, onFilterChange, onResetFilters, getUniqueV
                   </span>
                 </td>
               </tr>
-            ))}
+            ))
+            ) : (
+              <tr>
+                <td colSpan={columns.length} className="text-center py-8 text-gray-500">
+                  No data available
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="pagination">
+        <div className="pagination relative">
+          {/* Pagination Loading Indicator */}
+          {isLoading && (
+            <div className="absolute inset-0 bg-white bg-opacity-90 flex items-center justify-center z-20 rounded-lg">
+              <div className="flex items-center space-x-2 bg-indigo-50 px-4 py-2 rounded-lg border border-indigo-200">
+                <svg
+                  className="animate-spin h-5 w-5 text-indigo-600"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                <span className="text-sm font-medium text-indigo-700">Loading page...</span>
+              </div>
+            </div>
+          )}
+          
           <button
-            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-            disabled={currentPage === 1}
+            onClick={() => onPageChange(Math.max(currentPage - 1, 1))}
+            disabled={currentPage === 1 || isLoading}
             className="pagination-button"
+            style={{ opacity: isLoading ? 0.5 : 1 }}
           >
             Previous
           </button>
@@ -281,8 +383,10 @@ const TableReport = ({ data, filters, onFilterChange, onResetFilters, getUniqueV
                 return (
                   <button
                     key={pageNum}
-                    onClick={() => setCurrentPage(pageNum)}
+                    onClick={() => onPageChange(pageNum)}
+                    disabled={isLoading}
                     className={`pagination-button ${currentPage === pageNum ? 'active' : ''}`}
+                    style={{ opacity: isLoading ? 0.5 : 1 }}
                   >
                     {pageNum}
                   </button>
@@ -290,13 +394,15 @@ const TableReport = ({ data, filters, onFilterChange, onResetFilters, getUniqueV
               })}
               
               {totalPages > 5 && currentPage < totalPages - 2 && (
-                <span className="pagination-ellipsis">...</span>
+                <span className="pagination-ellipsis" style={{ opacity: isLoading ? 0.5 : 1 }}>...</span>
               )}
               
               {totalPages > 5 && currentPage < totalPages - 2 && (
                 <button
-                  onClick={() => setCurrentPage(totalPages)}
+                  onClick={() => onPageChange(totalPages)}
+                  disabled={isLoading}
                   className={`pagination-button ${currentPage === totalPages ? 'active' : ''}`}
+                  style={{ opacity: isLoading ? 0.5 : 1 }}
                 >
                   {totalPages}
                 </button>
@@ -305,9 +411,10 @@ const TableReport = ({ data, filters, onFilterChange, onResetFilters, getUniqueV
           </div>
           
           <button
-            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-            disabled={currentPage === totalPages}
+            onClick={() => onPageChange(Math.min(currentPage + 1, totalPages))}
+            disabled={currentPage === totalPages || isLoading}
             className="pagination-button"
+            style={{ opacity: isLoading ? 0.5 : 1 }}
           >
             Next
           </button>

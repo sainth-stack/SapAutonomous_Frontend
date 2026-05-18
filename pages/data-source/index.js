@@ -3,7 +3,7 @@ import './index.css';
 import { FaUpload, FaFileAlt, FaCheckCircle, FaSpinner } from "react-icons/fa";
 import { IoCloudUploadOutline } from "react-icons/io5";
 import { useNavigate } from 'react-router-dom';
-import { baseURL } from '../../const';
+import { baseURL, fileUploadURL } from '../../const';
 // Removed: readFileAsData, processFileData (no longer needed)
 
 const DataSource = () => {
@@ -81,13 +81,10 @@ const DataSource = () => {
         const classifierFormData = new FormData();
         classifierFormData.append('file', selectedFile);
 
-        const classifierResponse = await fetch(
-          'https://ams-classifier.cfapps.us10-001.hana.ondemand.com/process_file_replace',
-          {
-            method: 'POST',
-            body: classifierFormData,
-          }
-        );
+        const classifierResponse = await fetch(fileUploadURL, {
+          method: 'POST',
+          body: classifierFormData,
+        });
 
         if (classifierResponse.ok) {
           const classifierData = await classifierResponse.json();
