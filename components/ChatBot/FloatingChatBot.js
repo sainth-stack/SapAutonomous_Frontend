@@ -4,7 +4,7 @@ import { IoMdClose, IoMdSend, IoMdAttach } from 'react-icons/io';
 import { Table } from 'antd';
 import Plot from 'react-plotly.js';
 import axios from 'axios';
-import { baseURL } from '../../const';
+import { baseURL, classificationSentenceURL } from '../../const';
 import './FloatingChatBot.css';
 const testUrl = 'http://54.169.213.200:4006';
 const FloatingChatBot = ({
@@ -31,8 +31,40 @@ const FloatingChatBot = ({
   const [sessionId, setSessionId] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
   const [isFileUploading, setIsFileUploading] = useState(false);
+  const [backendDataset, setBackendDataset] = useState(null);
+  const [isFetchingDataset, setIsFetchingDataset] = useState(false);
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
+
+  // Fetch dataset from backend API when chat opens
+  useEffect(() => {
+    const fetchDataset = async () => {
+      if (!isOpen || backendDataset || isFetchingDataset || dataset) return;
+      
+      setIsFetchingDataset(true);
+      try {
+        const fileInfo = JSON.parse(localStorage.getItem('uploadedFile') || '{}');
+        const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
+        const filename = fileInfo?.serverFilename || 'data1.csv';
+        
+        const response = await axios.post(`${baseURL}/sla_breach/chat_dataset`, {
+          filename,
+          email: userInfo?.email,
+          name: userInfo?.name
+        });
+        
+        if (response.data?.dataset) {
+          setBackendDataset(response.data.dataset);
+        }
+      } catch (error) {
+        console.error('Failed to fetch chat dataset:', error);
+      } finally {
+        setIsFetchingDataset(false);
+      }
+    };
+    
+    fetchDataset();
+  }, [isOpen, backendDataset, isFetchingDataset, dataset]);
 
   // Check for uploaded file from localStorage on component mount
   useEffect(() => {
@@ -88,8 +120,7 @@ const FloatingChatBot = ({
       let data;
       if (endpoint === "/classification/" || endpoint === "/classification") {
         // External classifier API: return only z_review
-        const classifierUrl = 'https://ams-classifier.cfapps.us10-001.hana.ondemand.com/v1/classification/sentence';
-        const response = await axios.post(classifierUrl, { sentence: userMessage }, {
+        const response = await axios.post(classificationSentenceURL, { sentence: userMessage }, {
           headers: { 'Content-Type': 'application/json' }
         });
         data = response.data;
@@ -99,17 +130,21 @@ const FloatingChatBot = ({
         if (/Explore_sla/i.test(endpoint)) {
           const jsonBody = { query: userMessage };
           if (sessionId) jsonBody.session_id = sessionId;
-          if (dataset && Array.isArray(dataset) && dataset.length > 0) {
-            jsonBody.dataset = dataset;
+          // Use backend-fetched dataset if available, otherwise use prop dataset
+          const datasetToUse = backendDataset || dataset;
+          if (datasetToUse && Array.isArray(datasetToUse) && datasetToUse.length > 0) {
+            jsonBody.dataset = datasetToUse;
           }
           const response = await axios.post(apiEndpoint, jsonBody, {
             headers: { 'Content-Type': 'application/json' },
           });
           data = response.data;
         } else {
-          if (dataset && Array.isArray(dataset) && dataset.length > 0) {
+          // Use backend-fetched dataset if available, otherwise use prop dataset
+          const datasetToUse = backendDataset || dataset;
+          if (datasetToUse && Array.isArray(datasetToUse) && datasetToUse.length > 0) {
             try {
-              const blob = new Blob([JSON.stringify(dataset)], { type: 'application/json' });
+              const blob = new Blob([JSON.stringify(datasetToUse)], { type: 'application/json' });
               formData.append('dataset_file', blob, 'dataset.json');
             } catch (e) {
               console.warn('Failed to attach dataset file for chat request:', e);

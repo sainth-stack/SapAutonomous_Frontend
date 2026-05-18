@@ -31,11 +31,11 @@ function App() {
       <div className="App">
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/sla-export" element={<SlaExportPage />} />
           <Route element={<AdminLayout />}>
             <Route path="/" element={<DataSource />} />
             <Route path="/data-source" element={<DataSource />} />
             <Route path="/self-monitoring" element={<MainPages />} />
-            <Route path="/sla-export" element={<SlaExportPage />} />
             <Route path="/incident-management" element={<IncidentManagement />} />
             <Route path="/kedb" element={<KEDB />} />
 

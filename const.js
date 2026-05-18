@@ -1,21 +1,31 @@
-// export const baseURL = 'https://backend-ams-fastapi.cfapps.us10-001.hana.ondemand.com/api'
+// For local development, use: http://localhost:8000/api
 export const baseURL = 'http://localhost:8000/api'
+// export const baseURL = 'https://api.bainocular.seleccionconsulting.com/api'
 export const logApiURL = 'https://bainocular-log-api.cfapps.us10-001.hana.ondemand.com/log';
+export const systemMonitoringHistoryURL = 'https://api.bainocular.seleccionconsulting.com/api/history';
 
-export const systemMonitoringHistoryURL = 'https://ans-webhook-happy-civet-oc.cfapps.us10-001.hana.ondemand.com/api/history';
+/** File Upload endpoint */
+export const fileUploadURL = 'https://api.bainocular.seleccionconsulting.com/process_file_replace';
 
-/** AMS vectorizer – problem summary from raw request text (used before web search on self-monitoring) */
+/** Classification records endpoint */
+export const classificationRecordsURL = 'https://api.bainocular.seleccionconsulting.com/v1/classification/records';
+
+/** Classification sentence endpoint – classify a single sentence */
+export const classificationSentenceURL = 'https://api.bainocular.seleccionconsulting.com/v1/classification/sentence';
+
+/** Problem description endpoint – generates summary from raw request text */
 export const vectorizerProblemDescriptionURL =
-  'https://ams-vectorizer.cfapps.us10-001.hana.ondemand.com/get-problem-description';
+  'https://api.bainocular.seleccionconsulting.com/get-problem-description';
 
 /** Similar tickets / KEDB query */
 export const vectorizerSimilarTicketsURL =
-  'https://ams-vectorizer.cfapps.us10-001.hana.ondemand.com/v3/lux/similar-tickets/query';
-// Batch Monitoring (legacy – commented in favor of Background Job Monitoring)
-// export const batchMonitorURL = 'https://tg-monitoring-backend.cfapps.us10-001.hana.ondemand.com/v1/automate/idoc-data/status';
+  'https://api.bainocular.seleccionconsulting.com/v3/lux/similar-tickets/query';
+
+/** Power search endpoint */
+export const powerSearchURL = 'https://api.bainocular.seleccionconsulting.com/power-search';
 
 /** Background Job Monitoring – base URL; job list feed at `backgroundJobMonitorFeedURL` */
-export const backgroundJobMonitorBaseURL = 'https://jobprocessmonitor-balanced-chipmunk-cq.cfapps.us10-001.hana.ondemand.com';
+export const backgroundJobMonitorBaseURL = 'https://api.bainocular.seleccionconsulting.com';
 
 export const backgroundJobMonitorFeedURL = `${backgroundJobMonitorBaseURL}/background-jobs`;
 

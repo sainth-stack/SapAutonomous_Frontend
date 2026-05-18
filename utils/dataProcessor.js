@@ -127,27 +127,70 @@ const dateUtils = {
     }
   },
 
-  convertExcelDate: (excelDate) => {
-    // Already in DD/MM/YYYY format
-    if (typeof excelDate === "string" && excelDate.includes("/")) {
-      return excelDate;
-    }
-    
-    // Handle YYYY-MM-DD format (ISO format from backend)
-    if (typeof excelDate === "string" && excelDate.match(/^\d{4}-\d{2}-\d{2}/)) {
-      const [year, month, day] = excelDate.split('-');
-      return `${day}/${month}/${year}`;
-    }
-    
-    // Handle Excel serial number
-    if (typeof excelDate === "number") {
-      const date = new Date(Math.round((excelDate - 25569) * 86400 * 1000));
-      return date.toLocaleDateString("en-GB");
-    }
-    
-    return dateUtils.formatDate(excelDate);
-  },
+  convertExcelDate: (excelDate) => normalizeToDdMmYyyy(excelDate),
 };
+
+/** Canonical date for SLA math: DD/MM/YYYY (matches backend CSV and parseDateTime). */
+function normalizeToDdMmYyyy(value) {
+  if (value === null || value === undefined || value === "") return "";
+
+  if (typeof value === "number" && !isNaN(value)) {
+    const date = new Date(Math.round((value - 25569) * 86400 * 1000));
+    return date.toLocaleDateString("en-GB");
+  }
+
+  if (value instanceof Date && !isNaN(value)) {
+    return dateUtils.formatDate(value);
+  }
+
+  const raw = String(value).trim();
+  const datePart = raw.split(" ")[0];
+
+  if (/^\d{4}-\d{2}-\d{2}/.test(datePart)) {
+    const [year, month, day] = datePart.split("-");
+    return `${day}/${month}/${year}`;
+  }
+
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(datePart)) {
+    const [a, b, year] = datePart.split("/");
+    const n1 = parseInt(a, 10);
+    const n2 = parseInt(b, 10);
+    if (n1 > 12) return `${a}/${b}/${year}`;
+    if (n2 > 12) return `${b}/${a}/${year}`;
+    return `${a}/${b}/${year}`;
+  }
+
+  return raw;
+}
+
+const SOURCE_DATE_HEADERS = [
+  "Req. Creation Date",
+  "Historical Status - Change Date",
+  "Req. Closing Date",
+];
+
+const SOURCE_TIME_HEADERS = [
+  "Creation Time",
+  "Historical Status - Change Time",
+];
+
+/** Drop computed SLA columns so a downloaded report can be re-processed from source fields only. */
+function stripCalculatedColumns(headers, rows) {
+  const removeIndices = [];
+  headers.forEach((h, i) => {
+    if (YELLOW_FIELDS.includes(String(h || "").trim())) removeIndices.push(i);
+  });
+  if (removeIndices.length === 0) return { headers, rows };
+
+  removeIndices.sort((a, b) => b - a);
+  const newHeaders = [...headers];
+  const newRows = rows.map((row) => [...row]);
+  removeIndices.forEach((idx) => {
+    newHeaders.splice(idx, 1);
+    newRows.forEach((row) => row.splice(idx, 1));
+  });
+  return { headers: newHeaders, rows: newRows };
+}
 
 // Calculation utilities
 const calculationUtils = {
@@ -391,36 +434,38 @@ const getHolidaysForYears = (years) => {
 };
 
 const processExcelData = (data) => {
-  console.log(data,'sdfijsn')
-  const headers = data[0].map((h) => h?.toString().trim() || "");
-  const reqCreationDateIndex = headers.indexOf("Req. Creation Date");
-  const historicalStatusChangeDateIndex = headers.indexOf(
-      "Historical Status - Change Date"
-  );
+  let headers = data[0].map((h) => h?.toString().trim() || "");
 
-  const rows = data
-      .slice(1)
-      .filter((row) =>
-          row.some((cell) => cell !== undefined && cell !== null && cell !== "")
-      )
-      .map((row) => {
-          const newRow = [...row];
-          while (newRow.length < headers.length) newRow.push("");
-          if (reqCreationDateIndex !== -1 && newRow[reqCreationDateIndex]) {
-              newRow[reqCreationDateIndex] = dateUtils.convertExcelDate(
-                  newRow[reqCreationDateIndex]
-              );
-          }
-          if (
-              historicalStatusChangeDateIndex !== -1 &&
-              newRow[historicalStatusChangeDateIndex]
-          ) {
-              newRow[historicalStatusChangeDateIndex] = dateUtils.convertExcelDate(
-                  newRow[historicalStatusChangeDateIndex]
-              );
-          }
-          return newRow;
-      });
+  let rawRows = data
+    .slice(1)
+    .filter((row) =>
+      row.some((cell) => cell !== undefined && cell !== null && cell !== "")
+    );
+
+  const stripped = stripCalculatedColumns(headers, rawRows);
+  headers = stripped.headers;
+  rawRows = stripped.rows;
+
+  const rows = rawRows.map((row) => {
+    const newRow = [...row];
+    while (newRow.length < headers.length) newRow.push("");
+
+    SOURCE_DATE_HEADERS.forEach((name) => {
+      const idx = headers.indexOf(name);
+      if (idx !== -1 && newRow[idx] !== undefined && newRow[idx] !== "") {
+        newRow[idx] = dateUtils.convertExcelDate(newRow[idx]);
+      }
+    });
+
+    SOURCE_TIME_HEADERS.forEach((name) => {
+      const idx = headers.indexOf(name);
+      if (idx !== -1 && newRow[idx] !== undefined && newRow[idx] !== "") {
+        newRow[idx] = dateUtils.formatTime(newRow[idx]);
+      }
+    });
+
+    return newRow;
+  });
 
   // Identify empty columns (columns where all cells are empty)
   const emptyColumns = [];
@@ -869,31 +914,19 @@ export function downloadSlaReportXlsx(csvData) {
 
   const formattedRows = rows.map((row) => {
     const newRow = [...row];
-    const dateIndexes = [0, 7];
-    const changeTimeIndex = headers.indexOf("Historical Status - Change Time");
-    if (changeTimeIndex !== -1 && newRow[changeTimeIndex]) {
-      const timeStr = newRow[changeTimeIndex].toString().padStart(6, "0");
-      newRow[changeTimeIndex] = `${timeStr.slice(0, 2)}:${timeStr.slice(2, 4)}:${timeStr.slice(4, 6)}`;
-    }
 
-    dateIndexes.forEach((index) => {
-      if (newRow[index]) {
-        if (typeof newRow[index] === "string" && newRow[index].match(/^\d{2}\/\d{2}\/\d{4}$/)) {
-          const [dd, mm, yyyy] = newRow[index].split("/");
-          newRow[index] = `${mm}/${dd}/${yyyy}`;
-        } else if (typeof newRow[index] === "number") {
-          const date = XLSX.SSF.parse_date_code(newRow[index]);
-          newRow[index] = `${String(date.m).padStart(2, "0")}/${String(date.d).padStart(2, "0")}/${date.y}`;
-        } else if (
-          typeof newRow[index] === "string" &&
-          newRow[index].match(/^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}:\d{2}$/)
-        ) {
-          const [datePart] = newRow[index].split(" ");
-          const [dd, mm, yyyy] = datePart.split("/");
-          newRow[index] = `${mm}/${dd}/${yyyy}`;
-        }
-      }
+    SOURCE_DATE_HEADERS.forEach((name) => {
+      const idx = headers.indexOf(name);
+      if (idx === -1 || newRow[idx] === undefined || newRow[idx] === "") return;
+      newRow[idx] = normalizeToDdMmYyyy(newRow[idx]);
     });
+
+    SOURCE_TIME_HEADERS.forEach((name) => {
+      const idx = headers.indexOf(name);
+      if (idx === -1 || newRow[idx] === undefined || newRow[idx] === "") return;
+      newRow[idx] = dateUtils.formatTime(newRow[idx]);
+    });
+
     return newRow;
   });
 

@@ -112,3 +112,71 @@ export const useHasValidFileInfo = () => {
   const fileInfo = getUploadedFileInfo();
   return !!(fileInfo && fileInfo.name && (fileInfo.serverFilename || fileInfo.name));
 };
+
+// API function to fetch report data from backend with filters, sorting, and pagination
+const fetchReportData = async (filename, email, name, filters, sort, page, pageSize) => {
+  const url = `${baseURL}/sla_breach/report`;
+  
+  const body = {
+    filename: filename || 'data1.csv',
+    email,
+    name,
+    filters: {
+      requestType: filters.requestType || [],
+      creationDateFrom: filters.creationDateFrom || null,
+      creationDateTo: filters.creationDateTo || null,
+      priority: filters.priority || [],
+      assignedTo: filters.assignedTo || [],
+      status: filters.status || ['Work in progress'],
+      breached: filters.breached || [],
+      marconaName: filters.marconaName || [],
+      searchText: filters.searchText || '',
+      timeToBreachOption: filters.timeToBreachOption || 'eq',
+      timeToBreachValue: filters.timeToBreachValue || ''
+    },
+    sort: {
+      key: sort.key || null,
+      direction: sort.direction || 'asc'
+    },
+    page: page || 1,
+    page_size: pageSize || 10
+  };
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body)
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.detail || 'Error fetching report data from server.');
+  }
+
+  return response.json();
+};
+
+// Custom hook for report data with backend processing
+export const useReportData = (filters, sort, page, pageSize) => {
+  const fileInfo = getUploadedFileInfo();
+  const filename = fileInfo?.serverFilename || 'data1.csv';
+  const user = getStoredUser();
+  
+  return useQuery({
+    queryKey: ['report-data', filename, filters, sort, page, pageSize, user?.email, user?.name],
+    queryFn: () => fetchReportData(filename, user?.email, user?.name, filters, sort, page, pageSize),
+    enabled: true,
+    staleTime: 0, // Always fetch fresh data for pagination
+    gcTime: 5 * 60 * 1000, // 5 minutes - how long to keep in cache
+    refetchOnMount: true, // Refetch when component mounts
+    retry: (failureCount, error) => {
+      if (error.message.includes('not found')) {
+        return false;
+      }
+      return failureCount < 2;
+    },
+    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
+  });
+};
