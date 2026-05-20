@@ -113,8 +113,8 @@ export const useHasValidFileInfo = () => {
   return !!(fileInfo && fileInfo.name && (fileInfo.serverFilename || fileInfo.name));
 };
 
-// API function to fetch report data from backend with filters, sorting, and pagination
-const fetchReportData = async (filename, email, name, filters, sort, page, pageSize) => {
+// API function to fetch report data from backend with filters and sorting (no pagination)
+const fetchReportData = async (filename, email, name, filters, sort) => {
   const url = `${baseURL}/sla_breach/report`;
   
   const body = {
@@ -138,8 +138,8 @@ const fetchReportData = async (filename, email, name, filters, sort, page, pageS
       key: sort.key || null,
       direction: sort.direction || 'asc'
     },
-    page: page || 1,
-    page_size: pageSize || 10
+    page: 1,
+    page_size: 999999 // Large number to get all results
   };
 
   const response = await fetch(url, {
@@ -158,17 +158,17 @@ const fetchReportData = async (filename, email, name, filters, sort, page, pageS
   return response.json();
 };
 
-// Custom hook for report data with backend processing
-export const useReportData = (filters, sort, page, pageSize) => {
+// Custom hook for report data with backend processing (pagination handled in frontend)
+export const useReportData = (filters, sort) => {
   const fileInfo = getUploadedFileInfo();
   const filename = fileInfo?.serverFilename || 'data1.csv';
   const user = getStoredUser();
   
   return useQuery({
-    queryKey: ['report-data', filename, filters, sort, page, pageSize, user?.email, user?.name],
-    queryFn: () => fetchReportData(filename, user?.email, user?.name, filters, sort, page, pageSize),
+    queryKey: ['report-data', filename, filters, sort, user?.email, user?.name],
+    queryFn: () => fetchReportData(filename, user?.email, user?.name, filters, sort),
     enabled: true,
-    staleTime: 0, // Always fetch fresh data for pagination
+    staleTime: 0, // Always fetch fresh data
     gcTime: 5 * 60 * 1000, // 5 minutes - how long to keep in cache
     refetchOnMount: true, // Refetch when component mounts
     retry: (failureCount, error) => {

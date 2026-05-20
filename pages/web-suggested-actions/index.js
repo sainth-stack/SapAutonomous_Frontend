@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import axios from 'axios';
-import { baseURL } from '../../const'; // Assuming baseURL is exported from const.js
+import { powerSearchURL } from '../../const';
 import './index.css';
 
 const WebSuggestedActions = () => {
@@ -19,8 +19,8 @@ const WebSuggestedActions = () => {
         setResult('');
 
         try {
-            const response = await axios.post(`${baseURL}/web_search`, {
-                problem: query
+            const response = await axios.post(powerSearchURL, {
+                query: query
             }, {
                 headers: {
                     'Content-Type': 'application/json',

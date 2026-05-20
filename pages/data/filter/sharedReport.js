@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Select from 'react-select';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
@@ -9,6 +9,39 @@ const SharedFilters = ({
   onResetFilters,
   getUniqueValues 
 }) => {
+  // Local state for search input to enable debouncing
+  const [searchInput, setSearchInput] = useState(filters.searchText || '');
+  const debounceTimerRef = useRef(null);
+
+  // Update local search input when filters.searchText changes externally (e.g., reset)
+  useEffect(() => {
+    setSearchInput(filters.searchText || '');
+  }, [filters.searchText]);
+
+  // Debounced search handler
+  const handleSearchChange = (value) => {
+    setSearchInput(value);
+    
+    // Clear existing timer
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    
+    // Set new timer for 2 seconds
+    debounceTimerRef.current = setTimeout(() => {
+      onFilterChange('searchText', value);
+    }, 2000);
+  };
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
+
   return (
     <div className="filter-section">
       <div className="filter-grid">
@@ -191,13 +224,13 @@ const SharedFilters = ({
       </div>
       <div className="filter-search-row">
         <div className="filter-search-group">
-          <label className="filter-label">Search</label>
+          <label className="filter-label">Search (2s debounce)</label>
           <input
             type="text"
             placeholder="Search across all columns..."
             className="filter-input"
-            value={filters.searchText}
-            onChange={(e) => onFilterChange('searchText', e.target.value)}
+            value={searchInput}
+            onChange={(e) => handleSearchChange(e.target.value)}
           />
         </div>
         <button

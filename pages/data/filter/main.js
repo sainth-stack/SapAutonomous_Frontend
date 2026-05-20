@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import TableReport from '../table-report/index';
 import '../table-report/TableReport.css'
 import { useReportData } from '../../../utils/apiHooks';
@@ -22,13 +22,27 @@ const ReportViewer = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  // Use the backend API hook
+  // Use the backend API hook (without pagination params)
   const { data: reportData, isLoading, error } = useReportData(
     filters,
-    sortConfig,
-    currentPage,
-    itemsPerPage
+    sortConfig
   );
+
+  // Frontend pagination
+  const { paginatedTickets, totalPages } = useMemo(() => {
+    if (!reportData?.tickets) {
+      return { paginatedTickets: [], totalPages: 1 };
+    }
+    
+    const allTickets = reportData.tickets;
+    const total = allTickets.length;
+    const pages = Math.max(1, Math.ceil(total / itemsPerPage));
+    const start = (currentPage - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    const paginated = allTickets.slice(start, end);
+    
+    return { paginatedTickets: paginated, totalPages: pages };
+  }, [reportData?.tickets, currentPage, itemsPerPage]);
 
   // Handle filter changes
   const handleFilterChange = (filterName, value) => {
@@ -152,7 +166,7 @@ const ReportViewer = () => {
       )}
       
       <TableReport 
-        data={reportData?.tickets || []}
+        data={paginatedTickets}
         filters={filters}
         onFilterChange={handleFilterChange}
         onResetFilters={resetFilters}
@@ -161,7 +175,7 @@ const ReportViewer = () => {
         onSort={handleSort}
         currentPage={currentPage}
         onPageChange={setCurrentPage}
-        totalPages={reportData?.total_pages || 1}
+        totalPages={totalPages}
         totalFiltered={reportData?.total_filtered || 0}
         isLoading={isLoading}
       />
