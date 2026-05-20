@@ -119,8 +119,9 @@ const ChatBot = ({
       }
 
       if (isKnowledgeBase) {
-        // Expect SAP-style response: { request, response, metadata? }
-        const responseText = typeof data?.response === 'string' ? data.response : (typeof data?.payload === 'string' ? data.payload : '');
+        const responseText = typeof data?.result === 'string' 
+          ? data.result 
+          : (typeof data?.response === 'string' ? data.response : (typeof data?.payload === 'string' ? data.payload : ''));
         const formattedResponse = responseText
           ? responseText.replace(/\n/g, '<br/>')
           : 'No response returned.';

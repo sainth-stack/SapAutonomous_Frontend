@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import axios from 'axios';
-import { baseURL, vectorizerProblemDescriptionURL, vectorizerSimilarTicketsURL } from '../../const';
+import { vectorizerProblemDescriptionURL, vectorizerSimilarTicketsURL, powerSearchURL } from '../../const';
 import './index.css';
 
 const SearchModal = ({ isOpen, onClose, description, ticketId, searchType }) => {
@@ -65,8 +65,8 @@ const SearchModal = ({ isOpen, onClose, description, ticketId, searchType }) => 
                     console.warn('get-problem-description failed, using raw Request - Text Request', e);
                 }
                 response = await axios.post(
-                    `${baseURL}/web_search`,
-                    { problem: problemForWebSearch },
+                    powerSearchURL,
+                    { query: problemForWebSearch },
                     { headers: { 'Content-Type': 'application/json' } }
                 );
             }

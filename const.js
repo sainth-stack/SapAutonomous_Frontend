@@ -1,6 +1,6 @@
 // For local development, use: http://localhost:8000/api
-export const baseURL = 'http://localhost:8000/api'
-// export const baseURL = 'https://api.bainocular.seleccionconsulting.com/api'
+// export const baseURL = 'http://localhost:8000/api'
+export const baseURL = 'https://api.bainocular.seleccionconsulting.com/api'
 export const logApiURL = 'https://bainocular-log-api.cfapps.us10-001.hana.ondemand.com/log';
 export const systemMonitoringHistoryURL = 'https://api.bainocular.seleccionconsulting.com/api/history';
 
