@@ -13,7 +13,6 @@
     "axios": "^1.7.7",
     "chart.js": "^4.5.0",
     "cra-template": "1.2.0",
-    "hackathon": "file:",
     "lottie-react": "^2.4.0",
     "papaparse": "^5.5.1",
     "plotly.js": "^3.1.1",
@@ -35,7 +34,7 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build",
+    "build": "GENERATE_SOURCEMAP=false react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
@@ -58,6 +57,7 @@
     ]
   },
   "devDependencies": {
+    "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
     "autoprefixer": "^10.4.20",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.17"
