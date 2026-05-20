@@ -276,7 +276,7 @@ const AdminUsers = () => {
                     checked={form.is_super_admin}
                     onChange={(e) => setForm((f) => ({ ...f, is_super_admin: e.target.checked }))}
                   />
-                  <span>Super Admin (full access to all pages and admin)</span>
+                  <span>Admin (full access to all pages and admin)</span>
                 </label>
               </div>
               <div className="admin-modal-actions">
