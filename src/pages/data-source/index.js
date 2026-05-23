@@ -3,7 +3,7 @@ import './index.css';
 import { FaUpload, FaFileAlt, FaCheckCircle, FaSpinner } from "react-icons/fa";
 import { IoCloudUploadOutline } from "react-icons/io5";
 import { useNavigate } from 'react-router-dom';
-import { baseURL, fileUploadURL } from '../../const';
+import { baseURL } from '../../const';
 // Removed: readFileAsData, processFileData (no longer needed)
 
 const DataSource = () => {
@@ -76,36 +76,25 @@ const DataSource = () => {
 
       const data = await response.json();
 
-      // Call the classification API
-      try {
-        const classifierFormData = new FormData();
-        classifierFormData.append('file', selectedFile);
-
-        const classifierResponse = await fetch(fileUploadURL, {
-          method: 'POST',
-          body: classifierFormData,
-        });
-
-        if (classifierResponse.ok) {
-          const classifierData = await classifierResponse.json();
-          console.log('Classification API response:', classifierData);
-        } else {
-          console.warn('Classification API failed:', classifierResponse.status);
-        }
-      } catch (classifierError) {
-        console.error('Error calling classification API:', classifierError);
-      }
-
-      // Store minimal file information
+      // Store upload information
       const fileInfo = {
         name: selectedFile.name,
         uploadDate: new Date().toISOString(),
         size: selectedFile.size,
         originalName: selectedFile.name,
-        serverFilename: 'data1.csv',
+        batchId: data.batch_id || 'unknown',
+        rawRecords: data.raw_records || 0,
+        processedTickets: data.processed_tickets || 0,
         processed: true,
       };
       localStorage.setItem('uploadedFile', JSON.stringify(fileInfo));
+
+      console.log('Upload successful:', {
+        filename: data.filename,
+        batchId: data.batch_id,
+        rawRecords: data.raw_records,
+        processedTickets: data.processed_tickets,
+      });
 
       setUploadStatus('success');
       

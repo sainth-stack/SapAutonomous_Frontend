@@ -12,19 +12,19 @@ import AgingL2 from './AgingL2';
 import SLAMonitor from './SLAMonitor';
 
 const BIReport = () => {
-  const [activeTab, setActiveTab] = useState('Tkts_SLAs_Table');
+  const [activeTab, setActiveTab] = useState('Suspended_Stats');
 
   const tabs = [
-    { id: 'Tkts_SLAs_Table', label: 'Tkts_SLAs_Table' },
-    { id: 'Tkts_SLAs_Chart', label: 'Tkts_SLAs_Chart' },
-    { id: 'Consultant_Wise', label: 'Consultant_Wise' },
+    // { id: 'Tkts_SLAs_Table', label: 'Tkts_SLAs_Table' },
+    // { id: 'Tkts_SLAs_Chart', label: 'Tkts_SLAs_Chart' },
+    // { id: 'Consultant_Wise', label: 'Consultant_Wise' },
     { id: 'Suspended_Stats', label: 'Suspended_Stats' },
     { id: 'Suspended_L2', label: 'Suspended_L2' },
     { id: 'Tkt_Details', label: 'Tkt_Details' },
     { id: 'Open_Tkts', label: 'Open_Tkts' },
     { id: 'Open_Tkts_L2', label: 'Open_Tkts_L2' },
     { id: 'Aging_L2', label: 'Aging_L2' },
-    { id: 'SLA_Monitor', label: 'SLA_Monitor' }
+    // { id: 'SLA_Monitor', label: 'SLA_Monitor' }
   ];
 
   const renderTabContent = () => {

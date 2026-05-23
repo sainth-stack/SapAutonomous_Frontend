@@ -70,7 +70,7 @@ const KEDB = () => {
 
   return (
     <ChatBot
-      title="Knowledge Base Search"
+      title="AI Content Search"
       subtitle="Search for solutions to similar incidents and issues"
       placeholder="Ask about errors, issues, or search for solutions..."
       endpoint={vectorizerSimilarTicketsURL}

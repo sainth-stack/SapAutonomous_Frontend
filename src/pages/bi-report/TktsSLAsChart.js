@@ -1,30 +1,40 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import Plot from 'react-plotly.js';
 import axios from 'axios';
 import { baseURL } from '../../const';
 import '../data/table-report/TableReport.css';
 
-const TktsSLAsChart = ({ dateFilter }) => {
+const buildDateFilterParams = (dateFilter) => {
+  if (!dateFilter) return '';
+  const params = new URLSearchParams();
+  if (dateFilter.range) params.set('range', String(dateFilter.range));
+  if (dateFilter.start_month) params.set('start_month', dateFilter.start_month);
+  if (dateFilter.end_month) params.set('end_month', dateFilter.end_month);
+  const query = params.toString();
+  return query ? `?${query}` : '';
+};
+
+const TktsSLAsChart = ({ dateFilter = null }) => {
   const [chartData, setChartData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const fetchChartData = useCallback(async () => {
+  useEffect(() => {
+    fetchChartData();
+  }, [dateFilter]);
+
+  const fetchChartData = async () => {
     try {
       setLoading(true);
-      let url = `${baseURL}/sla_tabs/Tkts_SLAs_Chart`;
-      if (dateFilter) {
-        const params = new URLSearchParams();
-        if (dateFilter.range != null) params.set('range', dateFilter.range);
-        if (dateFilter.start_month) params.set('start_month', dateFilter.start_month);
-        if (dateFilter.end_month) params.set('end_month', dateFilter.end_month);
-        if (params.toString()) url += `?${params.toString()}`;
-      }
-      const response = await axios.get(url);
+      const query = buildDateFilterParams(dateFilter);
+      const response = await axios.get(`${baseURL}/sla_tabs/Tkts_SLAs_Chart${query}`);
+      
       const data = response.data;
+      
       if (data.chart_data) {
         setChartData(data.chart_data);
       }
+      
       setError(null);
     } catch (err) {
       console.error('Error fetching chart data:', err);
@@ -33,11 +43,7 @@ const TktsSLAsChart = ({ dateFilter }) => {
     } finally {
       setLoading(false);
     }
-  }, [dateFilter]);
-
-  useEffect(() => {
-    fetchChartData();
-  }, [fetchChartData]);
+  };
 
   const renderChart = () => {
     // Ensure we're only rendering a chart, not table data
@@ -358,9 +364,50 @@ const TktsSLAsChart = ({ dateFilter }) => {
   }
 
   return (
-    <div className="table-report-container tkts-sla-chart-compact" style={{ paddingBottom: '24px', margin: 0 }}>
-      <div className="tkts-sla-chart-wrapper">
-        {renderChart()}
+    <div className="table-report-container" style={{ paddingBottom: '40px' }}>
+      {/* Chart Header */}
+      <div className="report-card" style={{ overflow: 'visible', marginBottom: '20px' }}>
+        {/* <div className="report-header" style={{ padding: '20px 24px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '8px' }}>
+            <div style={{ 
+              width: '4px', 
+              height: '24px', 
+              backgroundColor: '#007bff', 
+              marginRight: '12px',
+              borderRadius: '2px'
+            }}></div>
+            <h2 className="report-title">Interactive Chart Dashboard</h2>
+          </div>
+          <p style={{ 
+            textAlign: 'center', 
+            color: '#6c757d', 
+            fontSize: '14px', 
+            margin: '0',
+            fontStyle: 'italic'
+          }}>
+            Visual representation of ticket trends and SLA performance over time
+          </p>
+        </div> */}
+      </div>
+
+      {/* Chart Section */}
+      <div style={{ 
+        backgroundColor: 'white',
+        overflow: 'visible',
+        minHeight: '800px',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center'
+      }}>
+        <div style={{ 
+          // padding: '24px',
+          minHeight: '750px',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center'
+        }}>
+          {renderChart()}
+        </div>
       </div>
     </div>
   );

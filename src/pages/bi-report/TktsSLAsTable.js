@@ -1,29 +1,39 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { baseURL } from '../../const';
 import '../data/table-report/TableReport.css';
 
-const TktsSLAsTable = ({ dateFilter }) => {
+const buildDateFilterParams = (dateFilter) => {
+  if (!dateFilter) return '';
+  const params = new URLSearchParams();
+  if (dateFilter.range) params.set('range', String(dateFilter.range));
+  if (dateFilter.start_month) params.set('start_month', dateFilter.start_month);
+  if (dateFilter.end_month) params.set('end_month', dateFilter.end_month);
+  const query = params.toString();
+  return query ? `?${query}` : '';
+};
+
+const TktsSLAsTable = ({ dateFilter = null }) => {
   const [tableData, setTableData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const fetchTabData = useCallback(async () => {
+  useEffect(() => {
+    fetchTabData();
+  }, [dateFilter]);
+
+  const fetchTabData = async () => {
     try {
       setLoading(true);
-      let url = `${baseURL}/sla_tabs/Tkts_SLAs_Table`;
-      if (dateFilter) {
-        const params = new URLSearchParams();
-        if (dateFilter.range != null) params.set('range', dateFilter.range);
-        if (dateFilter.start_month) params.set('start_month', dateFilter.start_month);
-        if (dateFilter.end_month) params.set('end_month', dateFilter.end_month);
-        if (params.toString()) url += `?${params.toString()}`;
-      }
-      const response = await axios.get(url);
+      const query = buildDateFilterParams(dateFilter);
+      const response = await axios.get(`${baseURL}/sla_tabs/Tkts_SLAs_Table${query}`);
+      
       const data = response.data;
+      
       if (data.table_data) {
         setTableData(data.table_data);
       }
+      
       setError(null);
     } catch (err) {
       console.error('Error fetching tab data:', err);
@@ -32,11 +42,7 @@ const TktsSLAsTable = ({ dateFilter }) => {
     } finally {
       setLoading(false);
     }
-  }, [dateFilter]);
-
-  useEffect(() => {
-    fetchTabData();
-  }, [fetchTabData]);
+  };
 
   const requestPriorities = [
     'P1 - Critical',

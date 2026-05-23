@@ -83,11 +83,8 @@ const TableReport = ({ data, filters, onFilterChange, onResetFilters, getUniqueV
     setIsExporting(true);
     try {
       const user = getStoredUser();
-      const fileInfo = getUploadedFileInfo();
-      const filename = fileInfo?.serverFilename || 'data1.csv';
-      
       const body = {
-        filename,
+        filename: 'db',
         email: user?.email,
         name: user?.name,
         filters,
