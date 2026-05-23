@@ -9,7 +9,6 @@ import { Login } from "./pages/Login";
 import { MainPages } from "./pages/data";
 import SlaExportPage from "./pages/sla-export";
 import ComingSoon from "./pages/ComingSoon";
-import BIReport from "./pages/bi-report";
 import SLACombined from "./pages/sla-combined";
 import ResourceEffectivenessConsultant from "./pages/resource-effectiveness-consultant";
 import SystemMonitoring from "./pages/system-monitoring";
@@ -76,8 +75,6 @@ function App() {
             <Route path="/effectiveness-occurrence" element={<ComingSoon />} />
             <Route path="/effectiveness-resolution-time" element={<ComingSoon />} />
 
-            {/* BI Report */}
-            <Route path="/bi-report" element={<BIReport />} />
 
             {/* Admin - super admin only enforced in layout */}
             <Route path="/admin/roles" element={<AdminRoles />} />

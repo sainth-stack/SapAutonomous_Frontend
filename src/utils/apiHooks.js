@@ -12,7 +12,7 @@ const generateCacheKey = (fileInfo) => {
     fileInfo.name,
     fileInfo.size,
     fileInfo.uploadDate,
-    fileInfo.serverFilename
+    fileInfo.batchId || fileInfo.name,
   ];
   
   return keyComponents;
@@ -34,24 +34,20 @@ const getUploadedFileInfo = () => {
   }
 };
 
-// API function to fetch CSV data (passes user email/name so backend can filter; admin gets all)
-const fetchCsvData = async (filename) => {
-  if (!filename) {
-    throw new Error('No filename provided');
-  }
-
+// API function to fetch CSV data from PostgreSQL (passes user email/name so backend can filter; admin gets all)
+const fetchCsvData = async () => {
   const user = getStoredUser();
   const params = new URLSearchParams();
   if (user?.email) params.set('email', user.email);
   if (user?.name) params.set('name', user.name);
   const query = params.toString();
-  const url = query ? `${baseURL}/get_csv_data/${filename}?${query}` : `${baseURL}/get_csv_data/${filename}`;
+  const url = query ? `${baseURL}/get_csv_data?${query}` : `${baseURL}/get_csv_data`;
 
   const response = await fetch(url);
   
   if (!response.ok) {
     if (response.status === 404) {
-      throw new Error(`File '${filename}' not found. Please check the filename and try again.`);
+      throw new Error('No uploaded data found. Please upload a file first.');
     } else {
       const errorData = await response.json().catch(() => ({}));
       throw new Error(errorData.detail || 'Error loading data from server.');
@@ -83,11 +79,10 @@ const fetchCsvData = async (filename) => {
 export const useCsvData = () => {
   const fileInfo = getUploadedFileInfo();
   const cacheKey = generateCacheKey(fileInfo);
-  const filename = fileInfo?.serverFilename || 'data1.csv';
   
   return useQuery({
     queryKey: cacheKey || ['csv-data', 'default'],
-    queryFn: () => fetchCsvData(filename),
+    queryFn: () => fetchCsvData(),
     enabled: true, // Always load data from server (default or uploaded file)
     staleTime: 10 * 60 * 1000, // 10 minutes - data is considered fresh
     gcTime: 30 * 60 * 1000, // 30 minutes - how long to keep in cache
@@ -110,15 +105,15 @@ export const useFileInfo = () => {
 // Hook to check if we have valid file info for API calls
 export const useHasValidFileInfo = () => {
   const fileInfo = getUploadedFileInfo();
-  return !!(fileInfo && fileInfo.name && (fileInfo.serverFilename || fileInfo.name));
+  return !!(fileInfo && fileInfo.name);
 };
 
 // API function to fetch report data from backend with filters and sorting (no pagination)
-const fetchReportData = async (filename, email, name, filters, sort) => {
+const fetchReportData = async (email, name, filters, sort) => {
   const url = `${baseURL}/sla_breach/report`;
   
   const body = {
-    filename: filename || 'data1.csv',
+    filename: 'db',
     email,
     name,
     filters: {
@@ -161,12 +156,11 @@ const fetchReportData = async (filename, email, name, filters, sort) => {
 // Custom hook for report data with backend processing (pagination handled in frontend)
 export const useReportData = (filters, sort) => {
   const fileInfo = getUploadedFileInfo();
-  const filename = fileInfo?.serverFilename || 'data1.csv';
   const user = getStoredUser();
   
   return useQuery({
-    queryKey: ['report-data', filename, filters, sort, user?.email, user?.name],
-    queryFn: () => fetchReportData(filename, user?.email, user?.name, filters, sort),
+    queryKey: ['report-data', fileInfo?.batchId || fileInfo?.name, filters, sort, user?.email, user?.name],
+    queryFn: () => fetchReportData(user?.email, user?.name, filters, sort),
     enabled: true,
     staleTime: 0, // Always fetch fresh data
     gcTime: 5 * 60 * 1000, // 5 minutes - how long to keep in cache

@@ -45,10 +45,8 @@ const FloatingChatBot = ({
       try {
         const fileInfo = JSON.parse(localStorage.getItem('uploadedFile') || '{}');
         const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
-        const filename = fileInfo?.serverFilename || 'data1.csv';
-        
         const response = await axios.post(`${baseURL}/sla_breach/chat_dataset`, {
-          filename,
+          filename: 'db',
           email: userInfo?.email,
           name: userInfo?.name
         });
