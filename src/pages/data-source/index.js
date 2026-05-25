@@ -3,7 +3,7 @@ import './index.css';
 import { FaUpload, FaFileAlt, FaCheckCircle, FaSpinner } from "react-icons/fa";
 import { IoCloudUploadOutline } from "react-icons/io5";
 import { useNavigate } from 'react-router-dom';
-import { baseURL } from '../../const';
+import { baseURL, fileUploadURL } from '../../const';
 // Removed: readFileAsData, processFileData (no longer needed)
 
 const DataSource = () => {
@@ -76,6 +76,29 @@ const DataSource = () => {
 
       const data = await response.json();
 
+      // Sync classification / KEDB table (sla_tickets_data) on the main API host
+      const classificationFormData = new FormData();
+      classificationFormData.append('file', selectedFile);
+
+      const classificationResponse = await fetch(fileUploadURL, {
+        method: 'POST',
+        body: classificationFormData,
+      });
+
+      if (!classificationResponse.ok) {
+        let classificationError = `Classification sync failed (${classificationResponse.status})`;
+        try {
+          const errJson = await classificationResponse.json();
+          classificationError = errJson.error || errJson.detail || errJson.message || classificationError;
+        } catch (_) {}
+        throw new Error(classificationError);
+      }
+
+      const classificationData = await classificationResponse.json();
+      if (classificationData.error) {
+        throw new Error(classificationData.error);
+      }
+
       // Store upload information
       const fileInfo = {
         name: selectedFile.name,
@@ -94,6 +117,7 @@ const DataSource = () => {
         batchId: data.batch_id,
         rawRecords: data.raw_records,
         processedTickets: data.processed_tickets,
+        classificationRecords: classificationData.length ?? classificationData.message,
       });
 
       setUploadStatus('success');
