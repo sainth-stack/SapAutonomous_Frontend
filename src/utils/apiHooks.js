@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { baseURL } from '../const';
 import { getStoredUser } from './authSession';
@@ -108,41 +109,50 @@ export const useHasValidFileInfo = () => {
   return !!(fileInfo && fileInfo.name);
 };
 
+const buildReportFiltersPayload = (filters) => {
+  const searchText = (filters.searchText || '').trim();
+  return {
+    requestType: filters.requestType || [],
+    creationDateFrom: filters.creationDateFrom || null,
+    creationDateTo: filters.creationDateTo || null,
+    priority: filters.priority || [],
+    assignedTo: filters.assignedTo || [],
+    status: filters.status || ['Work in progress'],
+    breached: filters.breached || [],
+    marconaName: filters.marconaName || [],
+    searchText: searchText.length > 3 ? searchText : '',
+    timeToBreachOption: filters.timeToBreachOption || 'eq',
+    timeToBreachValue: filters.timeToBreachValue || '',
+  };
+};
+
 // API function to fetch report data from backend with filters and sorting (no pagination)
-const fetchReportData = async (email, name, filters, sort) => {
+const fetchReportData = async (email, name, filters, sort, signal) => {
   const url = `${baseURL}/sla_breach/report`;
-  
+
   const body = {
     filename: 'db',
     email,
     name,
-    filters: {
-      requestType: filters.requestType || [],
-      creationDateFrom: filters.creationDateFrom || null,
-      creationDateTo: filters.creationDateTo || null,
-      priority: filters.priority || [],
-      assignedTo: filters.assignedTo || [],
-      status: filters.status || ['Work in progress'],
-      breached: filters.breached || [],
-      marconaName: filters.marconaName || [],
-      searchText: filters.searchText || '',
-      timeToBreachOption: filters.timeToBreachOption || 'eq',
-      timeToBreachValue: filters.timeToBreachValue || ''
-    },
+    filters: buildReportFiltersPayload(filters),
     sort: {
       key: sort.key || null,
-      direction: sort.direction || 'asc'
+      direction: sort.direction || 'asc',
     },
     page: 1,
-    page_size: 999999 // Large number to get all results
+    page_size: 999999,
   };
 
   const response = await fetch(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      'Cache-Control': 'no-cache',
+      Pragma: 'no-cache',
     },
-    body: JSON.stringify(body)
+    cache: 'no-store',
+    body: JSON.stringify(body),
+    signal,
   });
 
   if (!response.ok) {
@@ -153,24 +163,50 @@ const fetchReportData = async (email, name, filters, sort) => {
   return response.json();
 };
 
-// Custom hook for report data with backend processing (pagination handled in frontend)
+// Fetch report data on every filter/sort change without react-query caching
 export const useReportData = (filters, sort) => {
-  const fileInfo = getUploadedFileInfo();
   const user = getStoredUser();
-  
-  return useQuery({
-    queryKey: ['report-data', fileInfo?.batchId || fileInfo?.name, filters, sort, user?.email, user?.name],
-    queryFn: () => fetchReportData(user?.email, user?.name, filters, sort),
-    enabled: true,
-    staleTime: 0, // Always fetch fresh data
-    gcTime: 5 * 60 * 1000, // 5 minutes - how long to keep in cache
-    refetchOnMount: true, // Refetch when component mounts
-    retry: (failureCount, error) => {
-      if (error.message.includes('not found')) {
-        return false;
+  const [data, setData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    let cancelled = false;
+
+    const load = async () => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const result = await fetchReportData(
+          user?.email,
+          user?.name,
+          filters,
+          sort,
+          controller.signal,
+        );
+        if (!cancelled) {
+          setData(result);
+        }
+      } catch (err) {
+        if (!cancelled && err.name !== 'AbortError') {
+          setError(err);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
       }
-      return failureCount < 2;
-    },
-    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
-  });
+    };
+
+    load();
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [filters, sort, user?.email, user?.name]);
+
+  return { data, isLoading, error };
 };

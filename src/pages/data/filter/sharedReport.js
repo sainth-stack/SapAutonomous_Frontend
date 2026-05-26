@@ -9,35 +9,55 @@ const SharedFilters = ({
   onResetFilters,
   getUniqueValues 
 }) => {
-  // Local state for search input to enable debouncing
-  const [searchInput, setSearchInput] = useState(filters.searchText || '');
-  const debounceTimerRef = useRef(null);
+  const SEARCH_DEBOUNCE_MS = 2000;
+  const MIN_SEARCH_LENGTH = 3;
 
-  // Update local search input when filters.searchText changes externally (e.g., reset)
+  // Local state for debounced text inputs
+  const [searchInput, setSearchInput] = useState(filters.searchText || '');
+  const [timeToBreachInput, setTimeToBreachInput] = useState(filters.timeToBreachValue || '');
+  const searchDebounceRef = useRef(null);
+  const timeToBreachDebounceRef = useRef(null);
+
   useEffect(() => {
     setSearchInput(filters.searchText || '');
   }, [filters.searchText]);
 
-  // Debounced search handler
+  useEffect(() => {
+    setTimeToBreachInput(filters.timeToBreachValue || '');
+  }, [filters.timeToBreachValue]);
+
   const handleSearchChange = (value) => {
     setSearchInput(value);
-    
-    // Clear existing timer
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current);
+
+    if (searchDebounceRef.current) {
+      clearTimeout(searchDebounceRef.current);
     }
-    
-    // Set new timer for 2 seconds
-    debounceTimerRef.current = setTimeout(() => {
-      onFilterChange('searchText', value);
-    }, 2000);
+
+    searchDebounceRef.current = setTimeout(() => {
+      const trimmed = value.trim();
+      onFilterChange('searchText', trimmed.length > MIN_SEARCH_LENGTH ? trimmed : '');
+    }, SEARCH_DEBOUNCE_MS);
   };
 
-  // Cleanup timer on unmount
+  const handleTimeToBreachValueChange = (value) => {
+    setTimeToBreachInput(value);
+
+    if (timeToBreachDebounceRef.current) {
+      clearTimeout(timeToBreachDebounceRef.current);
+    }
+
+    timeToBreachDebounceRef.current = setTimeout(() => {
+      onFilterChange('timeToBreachValue', value);
+    }, SEARCH_DEBOUNCE_MS);
+  };
+
   useEffect(() => {
     return () => {
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
+      if (searchDebounceRef.current) {
+        clearTimeout(searchDebounceRef.current);
+      }
+      if (timeToBreachDebounceRef.current) {
+        clearTimeout(timeToBreachDebounceRef.current);
       }
     };
   }, []);
@@ -172,7 +192,7 @@ const SharedFilters = ({
 
         {/* Time to Breach */}
         <div className="filter-group">
-          <label className="filter-label">Time to Breach</label>
+          <label className="filter-label">Time to Breach (2s debounce)</label>
           <div className="flex gap-2">
             <Select
               options={[
@@ -194,8 +214,8 @@ const SharedFilters = ({
               type="number"
               placeholder="Hours"
               className="filter-input flex-1"
-              value={filters.timeToBreachValue || ''}
-              onChange={(e) => onFilterChange('timeToBreachValue', e.target.value)}
+              value={timeToBreachInput}
+              onChange={(e) => handleTimeToBreachValueChange(e.target.value)}
             />
           </div>
         </div>
@@ -224,10 +244,10 @@ const SharedFilters = ({
       </div>
       <div className="filter-search-row">
         <div className="filter-search-group">
-          <label className="filter-label">Search (2s debounce)</label>
+          <label className="filter-label">Search (min 4 chars, 2s debounce)</label>
           <input
             type="text"
-            placeholder="Search across all columns..."
+            placeholder="Search across all columns (4+ characters)..."
             className="filter-input"
             value={searchInput}
             onChange={(e) => handleSearchChange(e.target.value)}
