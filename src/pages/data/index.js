@@ -21,7 +21,7 @@ export const MainPages = () => {
       </div>
       
       {/* Floating Chat Bot */}
-      {/* <FloatingChatBot
+      <FloatingChatBot
         title="SLA Data Analysis"
         subtitle="Ask questions about your SLA data"
         placeholder="Ask about SLA metrics, trends, performance..."
@@ -30,7 +30,7 @@ export const MainPages = () => {
         showFileInfo={true}
         showSessionInfo={true}
         className="sla-data-chatbot"
-      /> */}
+      />
     </div>
   );
 };
