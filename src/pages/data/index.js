@@ -2,12 +2,20 @@ import React from "react";
 import Report from "./report";
 import FloatingChatBot from "../../components/ChatBot/FloatingChatBot";
 import { getStoredUser } from "../../utils/authSession";
-import { canShowExploreSlaChatBot } from "../../utils/permissions";
+import { canShowExploreSlaChatBot } from "../../utils/exploreSlaChatAccess";
 
 // Note: All data processing now happens on the backend via /api/sla_breach/* endpoints
 
+function shouldShowExploreChat(user) {
+  if (typeof canShowExploreSlaChatBot === "function") {
+    return canShowExploreSlaChatBot(user);
+  }
+  const email = (user?.email || "").trim().toLowerCase();
+  return email !== "dmancuso2@luxotticaretail.com";
+}
+
 export const MainPages = () => {
-  const showChatBot = canShowExploreSlaChatBot(getStoredUser());
+  const showChatBot = shouldShowExploreChat(getStoredUser());
 
   return (
     <div className="w-full min-h-full bg-slate-50 px-4 py-4 md:px-6 md:py-6">

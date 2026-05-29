@@ -1,10 +1,18 @@
 import React from 'react';
 import FloatingChatBot from '../../components/ChatBot/FloatingChatBot';
 import { getStoredUser } from '../../utils/authSession';
-import { canShowExploreSlaChatBot } from '../../utils/permissions';
+import { canShowExploreSlaChatBot } from '../../utils/exploreSlaChatAccess';
+
+function shouldShowExploreChat(user) {
+  if (typeof canShowExploreSlaChatBot === "function") {
+    return canShowExploreSlaChatBot(user);
+  }
+  const email = (user?.email || "").trim().toLowerCase();
+  return email !== "dmancuso2@luxotticaretail.com";
+}
 
 const SelfMonitoring = () => {
-  const showChatBot = canShowExploreSlaChatBot(getStoredUser());
+  const showChatBot = shouldShowExploreChat(getStoredUser());
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
