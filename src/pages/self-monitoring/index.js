@@ -1,7 +1,11 @@
 import React from 'react';
 import FloatingChatBot from '../../components/ChatBot/FloatingChatBot';
+import { getStoredUser } from '../../utils/authSession';
+import { canShowExploreSlaChatBot } from '../../utils/permissions';
 
 const SelfMonitoring = () => {
+  const showChatBot = canShowExploreSlaChatBot(getStoredUser());
+
   return (
     <div className="min-h-screen bg-gray-100 p-6">
       <div className="max-w-6xl mx-auto">
@@ -47,17 +51,18 @@ const SelfMonitoring = () => {
         </div>
       </div>
       
-      {/* Floating Chat Bot */}
-      <FloatingChatBot
-        title="Self Monitoring Assistant"
-        subtitle="Monitor your SLA performance"
-        placeholder="Ask about SLA monitoring..."
-        endpoint="/Explore_sla/"
-        initialMessage="Hello! I'm your Self-Monitoring assistant. How can I help you monitor your SLA performance today?"
-        showFileInfo={true}
-        showSessionInfo={true}
-        className="self-monitoring-chatbot"
-      />
+      {showChatBot && (
+        <FloatingChatBot
+          title="Self Monitoring Assistant"
+          subtitle="Monitor your SLA performance"
+          placeholder="Ask about SLA monitoring..."
+          endpoint="/Explore_sla/"
+          initialMessage="Hello! I'm your Self-Monitoring assistant. How can I help you monitor your SLA performance today?"
+          showFileInfo={true}
+          showSessionInfo={true}
+          className="self-monitoring-chatbot"
+        />
+      )}
     </div>
   );
 };
