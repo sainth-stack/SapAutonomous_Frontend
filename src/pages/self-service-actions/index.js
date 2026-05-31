@@ -62,32 +62,62 @@ const SapTable = ({ data }) => {
     );
 };
 
-const NLP_ENQUIRER_URL = 'https://ams-enquirer.cfapps.us10-001.hana.ondemand.com/api/v2/enquire/query';
-
-// Format NLP/Enquirer API response for display (handles various shapes)
-const formatNlpResponse = (data) => {
-    if (data == null) return 'No response.';
-    if (typeof data === 'string') return data;
-    if (typeof data === 'object') {
-        const text = data.answer ?? data.response ?? data.result ?? data.message ?? data.text;
-        if (text != null) return typeof text === 'string' ? text : JSON.stringify(text, null, 2);
-        return <pre className="sap-friendly-answer">{JSON.stringify(data, null, 2)}</pre>;
-    }
-    return String(data);
+// Simple table for Explore_sla table responses
+const ExploreTable = ({ rows }) => {
+    if (!rows?.length) return <p className="sap-empty">No records found.</p>;
+    const columns = Object.keys(rows[0]);
+    return (
+        <div className="sap-table-wrap">
+            <table className="sap-table">
+                <thead>
+                    <tr>{columns.map(col => <th key={col}>{humanizeColumn(col)}</th>)}</tr>
+                </thead>
+                <tbody>
+                    {rows.map((row, i) => (
+                        <tr key={i}>
+                            {columns.map(col => <td key={col}>{formatValue(row[col])}</td>)}
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </div>
+    );
 };
 
-// Chat bot for NLP Analysis – same UI as S/4HANA, calls enquirer API
+// NLP Analysis – SLA breach bot (Explore_sla API)
 const NlpChatBot = ({ onClose }) => {
     const [message, setMessage] = useState('');
     const [messages, setMessages] = useState([
-        { type: 'bot', text: 'Hello! I am your NLP Analysis assistant. Ask me anything in natural language.' }
+        {
+            type: 'bot',
+            text: 'Hello! I am your SLA NLP assistant. Ask about tickets, work in progress, breaches, resources, and resolution times.',
+        },
     ]);
     const [isLoading, setIsLoading] = useState(false);
+    const [sessionId, setSessionId] = useState(null);
+    const [backendDataset, setBackendDataset] = useState(null);
     const messagesEndRef = useRef(null);
     const inputRef = useRef(null);
 
     useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
     useEffect(() => { inputRef.current?.focus(); }, []);
+
+    useEffect(() => {
+        const fetchDataset = async () => {
+            try {
+                const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
+                const res = await axios.post(`${baseURL}/sla_breach/chat_dataset`, {
+                    filename: 'db',
+                    email: userInfo?.email,
+                    name: userInfo?.name,
+                });
+                if (res.data?.dataset) setBackendDataset(res.data.dataset);
+            } catch (err) {
+                console.error('Failed to fetch SLA chat dataset:', err);
+            }
+        };
+        fetchDataset();
+    }, []);
 
     const sendMessage = async (e) => {
         e?.preventDefault();
@@ -99,10 +129,19 @@ const NlpChatBot = ({ onClose }) => {
         setIsLoading(true);
 
         try {
-            const res = await axios.post(NLP_ENQUIRER_URL, { query: trimmed });
-            const payload = res?.data;
-            const display = formatNlpResponse(payload);
-            setMessages(prev => [...prev, { type: 'bot', nlpData: { raw: payload, display } }]);
+            const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
+            const jsonBody = { query: trimmed };
+            if (sessionId) jsonBody.session_id = sessionId;
+            if (userInfo?.email) jsonBody.email = userInfo.email;
+            if (userInfo?.name) jsonBody.name = userInfo.name;
+            if (backendDataset?.length) jsonBody.dataset = backendDataset;
+
+            const res = await axios.post(`${baseURL}/Explore_sla/`, jsonBody, {
+                headers: { 'Content-Type': 'application/json' },
+            });
+            const data = res?.data;
+            if (data?.session_id) setSessionId(data.session_id);
+            setMessages(prev => [...prev, { type: 'bot', exploreData: data }]);
         } catch (err) {
             const detail = err?.response?.data?.detail ?? err?.response?.data?.message ?? err.message ?? 'Something went wrong.';
             setMessages(prev => [...prev, { type: 'bot', text: `Error: ${detail}`, isError: true }]);
@@ -117,8 +156,8 @@ const NlpChatBot = ({ onClose }) => {
                 <div className="bot-header-left">
                     <img src={nlpLogo} alt="NLP Analysis" className="bot-logo" />
                     <div>
-                        <div className="bot-title">NLP Analysis</div>
-                        <div className="bot-subtitle">Natural language processing insights</div>
+                        <div className="bot-title">SLA NLP Analysis</div>
+                        <div className="bot-subtitle">Ask SLA breach data in natural language</div>
                     </div>
                 </div>
                 <button className="bot-close" onClick={onClose}>✕</button>
@@ -127,13 +166,18 @@ const NlpChatBot = ({ onClose }) => {
             <div className="bot-messages">
                 {messages.map((msg, idx) => (
                     <div key={idx} className={`bot-msg ${msg.type} ${msg.isError ? 'error' : ''}`}>
-                        {msg.nlpData ? (
+                        {msg.exploreData ? (
                             <div className="sap-response">
-                                <div className="sap-friendly-answer">
-                                    {typeof msg.nlpData.display === 'string'
-                                        ? msg.nlpData.display
-                                        : msg.nlpData.display}
-                                </div>
+                                {msg.exploreData.explanation && (
+                                    <div className="sap-friendly-answer">{msg.exploreData.explanation}</div>
+                                )}
+                                {msg.exploreData.type === 'table' && Array.isArray(msg.exploreData.payload) ? (
+                                    <ExploreTable rows={msg.exploreData.payload} />
+                                ) : (
+                                    <div className="sap-friendly-answer">
+                                        {String(msg.exploreData.payload ?? msg.exploreData.detail ?? 'No response.')}
+                                    </div>
+                                )}
                             </div>
                         ) : (
                             <span>{msg.text}</span>
@@ -154,7 +198,7 @@ const NlpChatBot = ({ onClose }) => {
                     className="bot-input"
                     value={message}
                     onChange={e => setMessage(e.target.value)}
-                    placeholder="Ask your question in natural language"
+                    placeholder="e.g. How many work in progress tickets are there?"
                     disabled={isLoading}
                 />
                 <button type="submit" className="bot-send" disabled={isLoading || !message.trim()}>Send</button>
@@ -266,7 +310,7 @@ const SelfServiceActions = () => {
         // { id: 'btp', title: 'SAP ECC', desc: 'Self Service for SAP ECC system.', logo: eccLogo, available: false, badge: 'Soon' },
         // { id: 'batch', title: 'SAP S/4 Cloud', desc: 'Self Service for SAP S/4 Cloud system.', logo: s4CloudLogo, available: false, badge: 'Soon' },
         // { id: 'sop-know-errors', title: 'SOP - Know Errors', desc: 'Standard operating procedures and known errors.', logo: sopLogo, available: false, badge: 'Coming Soon' },
-        // { id: 'nlp-analysis', title: 'NLP Analysis', desc: 'Natural language processing insights.', logo: nlpLogo, available: true, badge: 'Live' },
+        { id: 'nlp-analysis', title: 'NLP Analysis', desc: 'Ask SLA breach data in natural language.', logo: nlpLogo, available: true, badge: 'Live' },
     ];
 
     return (
@@ -297,7 +341,7 @@ const SelfServiceActions = () => {
             {openBotId && (
                 <div className="ssa-overlay" onClick={e => e.target === e.currentTarget && setOpenBotId(null)}>
                     {openBotId === 's4' && <SapChatBot onClose={() => setOpenBotId(null)} />}
-                    {/* {openBotId === 'nlp-analysis' && <NlpChatBot onClose={() => setOpenBotId(null)} />} */}
+                    {openBotId === 'nlp-analysis' && <NlpChatBot onClose={() => setOpenBotId(null)} />}
                 </div>
             )}
         </div>
