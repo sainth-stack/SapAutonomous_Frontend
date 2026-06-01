@@ -51,6 +51,7 @@ export function Login() {
           name: data.name,
           isAuthenticated: true,
           isSuperAdmin: data.is_super_admin || false,
+          accessAllData: data.access_all_data || false,
           allowedPaths: data.allowed_paths ?? null,
           loginTime: new Date().toISOString(),
         };

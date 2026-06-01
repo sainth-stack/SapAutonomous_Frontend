@@ -32,7 +32,7 @@ export const MainPages = () => {
         </div>
       </div>
       
-      {showChatBot && (
+      {/* {showChatBot && (
         <FloatingChatBot
           title="SLA Data Analysis"
           subtitle="Ask questions about your SLA data"
@@ -43,7 +43,7 @@ export const MainPages = () => {
           showSessionInfo={true}
           className="sla-data-chatbot"
         />
-      )}
+      )} */}
     </div>
   );
 };

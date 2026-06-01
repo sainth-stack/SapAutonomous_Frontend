@@ -32,7 +32,12 @@ const AdminRoles = () => {
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  const [form, setForm] = useState({ name: "", description: "", permissions: [] });
+  const [form, setForm] = useState({
+    name: "",
+    description: "",
+    permissions: [],
+    accessAllData: false,
+  });
   const selectAllRef = useRef(null);
 
   const fetchRoles = async () => {
@@ -69,7 +74,7 @@ const AdminRoles = () => {
 
   const openCreate = () => {
     setEditingId(null);
-    setForm({ name: "", description: "", permissions: [] });
+    setForm({ name: "", description: "", permissions: [], accessAllData: false });
     setModalOpen(true);
   };
 
@@ -79,6 +84,7 @@ const AdminRoles = () => {
       name: role.name,
       description: role.description || "",
       permissions: role.permissions || [],
+      accessAllData: !!role.access_all_data,
     });
     setModalOpen(true);
   };
@@ -128,6 +134,7 @@ const AdminRoles = () => {
         name: form.name.trim(),
         description: form.description.trim(),
         permissions: form.permissions,
+        access_all_data: form.accessAllData,
       };
       if (editingId) {
         const r = await fetch(`${baseURL}/admin/roles/${editingId}`, {
@@ -201,6 +208,7 @@ const AdminRoles = () => {
               <tr>
                 <th>Role</th>
                 <th>Role Description</th>
+                <th>Data access</th>
                 <th>Permissions</th>
                 <th className="admin-th-actions">Actions</th>
               </tr>
@@ -208,13 +216,20 @@ const AdminRoles = () => {
             <tbody>
               {roles.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="admin-empty">No roles yet. Add a role to get started.</td>
+                  <td colSpan={5} className="admin-empty">No roles yet. Add a role to get started.</td>
                 </tr>
               ) : (
                 roles.map((role) => (
                   <tr key={role.id}>
                     <td className="admin-td-name">{role.name}</td>
                     <td>{role.description || "—"}</td>
+                    <td>
+                      {role.access_all_data ? (
+                        <span className="admin-data-scope admin-data-scope--all">All tickets</span>
+                      ) : (
+                        <span className="admin-data-scope admin-data-scope--assigned">Assigned only</span>
+                      )}
+                    </td>
                     <td>
                       <span className="admin-perms-summary">
                         {role.permissions && role.permissions.length > 0
@@ -242,7 +257,7 @@ const AdminRoles = () => {
             <div className="admin-modal" onClick={(e) => e.stopPropagation()}>
               <h2 className="admin-modal-title">{editingId ? "Edit Role" : "Add Role"}</h2>
               <div className="admin-form-group">
-                <label>Role name</label>
+                <label className="admin-field-label">Role name</label>
                 <input
                   type="text"
                   value={form.name}
@@ -252,7 +267,7 @@ const AdminRoles = () => {
                 />
               </div>
               <div className="admin-form-group">
-                <label>Role description</label>
+                <label className="admin-field-label">Role description</label>
                 <input
                   type="text"
                   value={form.description}
@@ -261,8 +276,32 @@ const AdminRoles = () => {
                   className="admin-input"
                 />
               </div>
+              <div className="admin-form-group">
+                <label className="admin-field-label">Data access</label>
+                <div className="admin-settings-card">
+                  <div className="admin-settings-row">
+                    <div className="admin-settings-row-content">
+                      <span className="admin-settings-row-title">Access to all SLA data</span>
+                      <span className="admin-settings-row-desc">
+                        Users see all tickets, not only items assigned to them.
+                      </span>
+                    </div>
+                    <label className="admin-toggle" aria-label="Access to all SLA data">
+                      <input
+                        type="checkbox"
+                        checked={form.accessAllData}
+                        onChange={(e) =>
+                          setForm((f) => ({ ...f, accessAllData: e.target.checked }))
+                        }
+                      />
+                      <span className="admin-toggle-track" />
+                    </label>
+                  </div>
+                </div>
+              </div>
               <div className="admin-form-group admin-form-group-permissions">
-                <label>Permissions (select pages this role can access)</label>
+                <label className="admin-field-label">Page permissions</label>
+                <p className="admin-field-hint">Select which pages users with this role can open.</p>
                 <div className="admin-permissions-box">
                   <div className="admin-permissions-header">
                     <label className="admin-check-label admin-select-all">
