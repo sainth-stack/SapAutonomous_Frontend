@@ -1,7 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import axios from 'axios';
-import { vectorizerProblemDescriptionURL, vectorizerSimilarTicketsURL, powerSearchURL } from '../../const';
+import { vectorizerProblemDescriptionURL, vectorizerSimilarTicketsURL, aiPowerSearchURL } from '../../const';
+import {
+  parseAiPowerSearchResponse,
+  getAiPowerSearchError,
+} from '../../utils/aiPowerSearch';
 import './index.css';
 
 const SearchModal = ({ isOpen, onClose, description, ticketId, searchType }) => {
@@ -65,22 +69,28 @@ const SearchModal = ({ isOpen, onClose, description, ticketId, searchType }) => 
                     console.warn('get-problem-description failed, using raw Request - Text Request', e);
                 }
                 response = await axios.post(
-                    powerSearchURL,
-                    { query: problemForWebSearch },
+                    aiPowerSearchURL,
+                    { session_id: '', query: problemForWebSearch },
                     { headers: { 'Content-Type': 'application/json' } }
                 );
             }
 
             if (response && response.data) {
-                // Handle response based on API
-                const resultData = response.data.response || response.data.result || 'No results found.';
-                setResults(resultData);
+                const parsed = parseAiPowerSearchResponse(response.data);
+                if (parsed.actions?.length) {
+                    const text = parsed.actions
+                        .map((a, i) => `### ${a.title || `Suggestion ${i + 1}`}\n\n${a.body || ''}`)
+                        .join('\n\n---\n\n');
+                    setResults(text);
+                } else {
+                    setResults(parsed.markdown || 'No results found.');
+                }
             } else {
                 setResults('No results found.');
             }
         } catch (err) {
             console.error('Error fetching results:', err);
-            setError('Failed to fetch results. Please try again.');
+            setError(getAiPowerSearchError(err));
         } finally {
             setIsLoading(false);
         }

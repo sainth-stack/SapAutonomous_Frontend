@@ -128,6 +128,9 @@ const FloatingChatBot = ({
         if (/Explore_sla/i.test(endpoint)) {
           const jsonBody = { query: userMessage };
           if (sessionId) jsonBody.session_id = sessionId;
+          const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
+          if (userInfo?.email) jsonBody.email = userInfo.email;
+          if (userInfo?.name) jsonBody.name = userInfo.name;
           // Use backend-fetched dataset if available, otherwise use prop dataset
           const datasetToUse = backendDataset || dataset;
           if (datasetToUse && Array.isArray(datasetToUse) && datasetToUse.length > 0) {

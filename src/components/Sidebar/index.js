@@ -29,6 +29,7 @@ import {
   MdAdminPanelSettings,
   MdManageAccounts,
   MdAssignmentInd,
+  MdSettings,
   MdNotifications,
   MdUploadFile,
   MdUnfoldLess,
@@ -657,16 +658,22 @@ export default function Sidebar() {
                     </div>
                     {expandedSections.admin && (
                       <ul className="subsection-list">
+                        <li className={`sidebar-item subsection ${location.pathname === "/admin/users" ? "active" : ""}`}>
+                          <Link to="/admin/users" className="sidebar-link">
+                            <MdManageAccounts size={14} className="link-icon" />
+                            <span className="link-text">Users</span>
+                          </Link>
+                        </li>
                         <li className={`sidebar-item subsection ${location.pathname === "/admin/roles" ? "active" : ""}`}>
                           <Link to="/admin/roles" className="sidebar-link">
                             <MdAssignmentInd size={14} className="link-icon" />
                             <span className="link-text">Roles</span>
                           </Link>
                         </li>
-                        <li className={`sidebar-item subsection ${location.pathname === "/admin/users" ? "active" : ""}`}>
-                          <Link to="/admin/users" className="sidebar-link">
-                            <MdManageAccounts size={14} className="link-icon" />
-                            <span className="link-text">Users</span>
+                        <li className={`sidebar-item subsection ${location.pathname === "/admin/configuration" ? "active" : ""}`}>
+                          <Link to="/admin/configuration" className="sidebar-link">
+                            <MdSettings size={14} className="link-icon" />
+                            <span className="link-text">Configuration</span>
                           </Link>
                         </li>
                       </ul>
