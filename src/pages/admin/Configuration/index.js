@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo } from "react";
+import axios from "axios";
 import { message } from "antd";
 import { MdLock, MdExpandMore, MdExpandLess, MdVisibility, MdVisibilityOff } from "react-icons/md";
 import { configurationsURL, configurationsSaveURL } from "../../../const";
@@ -60,20 +61,15 @@ function getValidationRegex(field) {
   return null;
 }
 
+function getApiError(err, fallback) {
+  const detail = err?.response?.data?.detail;
+  if (typeof detail === "string") return detail;
+  return err?.message || fallback;
+}
+
 async function loadConfigurations() {
-  let res = await fetch(configurationsURL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: "{}",
-  });
-  if (res.status === 405 || res.status === 404) {
-    res = await fetch(configurationsURL);
-  }
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail || "Failed to load configuration");
-  }
-  return res.json();
+  const res = await axios.get(configurationsURL);
+  return res.data;
 }
 
 const AdminConfiguration = () => {
@@ -102,7 +98,7 @@ const AdminConfiguration = () => {
     return Array.from(map.values());
   }, [fields]);
 
-  const hydrateForm = useCallback((list) => {
+  const hydrateForm = (list) => {
     const next = {};
     list.forEach((f) => {
       next[f.field_id] = f.current_value ?? "";
@@ -110,34 +106,34 @@ const AdminConfiguration = () => {
     setValues(next);
     setInitialValues({ ...next });
     const expanded = {};
-    const groups = new Set(list.map((f) => (f.field_group || "general").toLowerCase()));
-    groups.forEach((g) => {
+    list.forEach((f) => {
+      const g = (f.field_group || "general").toLowerCase();
       expanded[g] = true;
     });
     setExpandedGroups(expanded);
     setVisiblePasswords({});
-  }, []);
+  };
 
-  const fetchConfig = useCallback(async () => {
+  const fetchConfig = async () => {
     setLoading(true);
     try {
       const data = await loadConfigurations();
-      const list = data.fields || [];
+      const list = data?.fields || [];
       setFields(list);
       hydrateForm(list);
-    } catch (e) {
-      message.error(e.message || "Failed to load configuration");
+    } catch (err) {
+      message.error(getApiError(err, "Failed to load configuration"));
       setFields([]);
       setValues({});
       setInitialValues({});
     } finally {
       setLoading(false);
     }
-  }, [hydrateForm]);
+  };
 
   useEffect(() => {
     fetchConfig();
-  }, [fetchConfig]);
+  }, []);
 
   const toggleGroup = (key) => {
     setExpandedGroups((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -200,28 +196,26 @@ const AdminConfiguration = () => {
 
     setSaving(true);
     try {
-      const res = await fetch(configurationsSaveURL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ updates }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        throw new Error(data.detail || "Failed to save configuration");
-      }
-      if (data.failed > 0) {
+      const { data } = await axios.post(
+        configurationsSaveURL,
+        { updates },
+        { headers: { "Content-Type": "application/json" } }
+      );
+
+      if (data?.failed > 0) {
         const failed = (data.results || []).filter((r) => r.status !== "saved");
         const detail = failed.map((r) => r.detail || r.status).join("; ");
         throw new Error(detail || "Some fields could not be saved");
       }
+
       message.success(
-        data.saved === 1
+        data?.saved === 1
           ? "Configuration saved"
           : `Configuration saved (${data.saved} fields)`
       );
       await fetchConfig();
-    } catch (e) {
-      message.error(e.message || "Failed to save configuration");
+    } catch (err) {
+      message.error(getApiError(err, "Failed to save configuration"));
     } finally {
       setSaving(false);
     }
