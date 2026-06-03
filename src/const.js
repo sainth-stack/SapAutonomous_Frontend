@@ -1,7 +1,7 @@
 // For local development, use: http://localhost:8000/api
 // export const baseURL = 'http://localhost:8000/api'
 export const baseURL = 'https://api.bainocular.seleccionconsulting.com/api'
-export const logApiURL = 'https://bainocular-log-api.cfapps.us10-001.hana.ondemand.com/log';
+export const logApiURL = 'https://api.bainocular.seleccionconsulting.com/log';
 export const systemMonitoringHistoryURL = 'https://api.bainocular.seleccionconsulting.com/api/history';
 
 /** File Upload endpoint */
@@ -21,8 +21,11 @@ export const vectorizerProblemDescriptionURL =
 export const vectorizerSimilarTicketsURL =
   'https://api.bainocular.seleccionconsulting.com/v3/lux/similar-tickets/query';
 
-/** Power search endpoint */
+/** Legacy power search endpoint */
 export const powerSearchURL = 'https://api.bainocular.seleccionconsulting.com/power-search';
+
+/** AI Power Search (session-aware) — used by Web Suggested Actions */
+export const aiPowerSearchURL = 'https://api.bainocular.seleccionconsulting.com/ai-power-search';
 
 /** Background Job Monitoring – base URL; job list feed at `backgroundJobMonitorFeedURL` */
 export const backgroundJobMonitorBaseURL = 'https://api.bainocular.seleccionconsulting.com';
@@ -34,3 +37,7 @@ export const configurationJobsURL = `${baseURL}/configuration/jobs`;
 export const configurationApplicationsURL = `${baseURL}/configuration/applications`;
 export const configurationGlobalIntervalsURL = `${baseURL}/configuration/global-intervals`;
 export const sendEmailNotificationURL = `${baseURL}/configuration/send-email`;
+
+/** System configuration (database credentials, URLs, etc.) */
+export const configurationsURL = `${baseURL}/configurations`;
+export const configurationsSaveURL = `${baseURL}/configurations/save`;
