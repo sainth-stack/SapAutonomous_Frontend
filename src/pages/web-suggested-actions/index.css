@@ -25,6 +25,9 @@
 .search-header p {
   color: #64748b;
   font-size: 1.1rem;
+  max-width: 640px;
+  margin: 0 auto;
+  line-height: 1.5;
 }
 
 .search-section {
@@ -210,4 +213,53 @@
   to {
     transform: rotate(360deg);
   }
+}
+
+.error-message {
+  color: #dc2626;
+  text-align: center;
+  margin-bottom: 20px;
+  padding: 12px 16px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.suggested-actions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.suggested-action-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 20px 24px;
+  background: #f8fafc;
+}
+
+.suggested-action-title {
+  margin: 0 0 8px;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.suggested-action-link {
+  display: inline-block;
+  margin-bottom: 12px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.suggested-action-link:hover {
+  text-decoration: underline;
+}
+
+.suggested-action-body {
+  margin-top: 4px;
 }

@@ -23,7 +23,7 @@ const PERMISSION_SECTIONS = [
   },
   { title: "Effectiveness of Measures", paths: ["/effectiveness-occurrence", "/effectiveness-resolution-time"] },
   { title: "BI Report", paths: ["/bi-report"] },
-  { title: "Admin", paths: ["/admin/roles", "/admin/users"] },
+  { title: "Admin", paths: ["/admin/users", "/admin/roles", "/admin/configuration"] },
 ];
 
 const AdminRoles = () => {

@@ -1,6 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
 import axios from 'axios';
-import { baseURL } from '../../const';
+import { baseURL, aiPowerSearchURL } from '../../const';
+import {
+  getAiPowerSearchSessionId,
+  setAiPowerSearchSessionId,
+  parseAiPowerSearchResponse,
+  getAiPowerSearchError,
+  AI_POWER_SEARCH_SSA_SESSION_KEY,
+} from '../../utils/aiPowerSearch';
 import s4Logo from '../../assets/s4.png';
 // import eccLogo from '../../assets/ecc.jpeg';
 // import s4CloudLogo from '../../assets/s4-cloud.jpg';
@@ -62,62 +70,60 @@ const SapTable = ({ data }) => {
     );
 };
 
-// Simple table for Explore_sla table responses
-const ExploreTable = ({ rows }) => {
-    if (!rows?.length) return <p className="sap-empty">No records found.</p>;
-    const columns = Object.keys(rows[0]);
+const markdownLinkComponent = {
+    a: ({ node, ...props }) => (
+        <a {...props} target="_blank" rel="noopener noreferrer">
+            {props.children}
+        </a>
+    ),
+};
+
+const PowerSearchBotReply = ({ markdown, actions }) => {
+    if (actions?.length) {
+        return (
+            <div className="ssa-power-actions">
+                {actions.map((item, index) => (
+                    <div key={`${item.title}-${index}`} className="ssa-power-action-card">
+                        <div className="ssa-power-action-title">{item.title}</div>
+                        {item.url && (
+                            <a href={item.url} className="ssa-power-action-link" target="_blank" rel="noopener noreferrer">
+                                View reference
+                            </a>
+                        )}
+                        <div className="ssa-power-action-body">
+                            <ReactMarkdown components={markdownLinkComponent}>
+                                {item.body || '_No details provided._'}
+                            </ReactMarkdown>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        );
+    }
     return (
-        <div className="sap-table-wrap">
-            <table className="sap-table">
-                <thead>
-                    <tr>{columns.map(col => <th key={col}>{humanizeColumn(col)}</th>)}</tr>
-                </thead>
-                <tbody>
-                    {rows.map((row, i) => (
-                        <tr key={i}>
-                            {columns.map(col => <td key={col}>{formatValue(row[col])}</td>)}
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
+        <div className="sap-friendly-answer ssa-power-markdown">
+            <ReactMarkdown components={markdownLinkComponent}>
+                {markdown || 'No response.'}
+            </ReactMarkdown>
         </div>
     );
 };
 
-// NLP Analysis – SLA breach bot (Explore_sla API)
+// NLP Analysis – AI Power Search
 const NlpChatBot = ({ onClose }) => {
     const [message, setMessage] = useState('');
     const [messages, setMessages] = useState([
         {
             type: 'bot',
-            text: 'Hello! I am your SLA NLP assistant. Ask about tickets, work in progress, breaches, resources, and resolution times.',
+            text: 'Hello! Ask SAP technical questions and I will search community knowledge for suggested actions and fixes.',
         },
     ]);
     const [isLoading, setIsLoading] = useState(false);
-    const [sessionId, setSessionId] = useState(null);
-    const [backendDataset, setBackendDataset] = useState(null);
     const messagesEndRef = useRef(null);
     const inputRef = useRef(null);
 
     useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
     useEffect(() => { inputRef.current?.focus(); }, []);
-
-    useEffect(() => {
-        const fetchDataset = async () => {
-            try {
-                const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
-                const res = await axios.post(`${baseURL}/sla_breach/chat_dataset`, {
-                    filename: 'db',
-                    email: userInfo?.email,
-                    name: userInfo?.name,
-                });
-                if (res.data?.dataset) setBackendDataset(res.data.dataset);
-            } catch (err) {
-                console.error('Failed to fetch SLA chat dataset:', err);
-            }
-        };
-        fetchDataset();
-    }, []);
 
     const sendMessage = async (e) => {
         e?.preventDefault();
@@ -129,22 +135,34 @@ const NlpChatBot = ({ onClose }) => {
         setIsLoading(true);
 
         try {
-            const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
-            const jsonBody = { query: trimmed };
-            if (sessionId) jsonBody.session_id = sessionId;
-            if (userInfo?.email) jsonBody.email = userInfo.email;
-            if (userInfo?.name) jsonBody.name = userInfo.name;
-            if (backendDataset?.length) jsonBody.dataset = backendDataset;
+            const res = await axios.post(
+                aiPowerSearchURL,
+                {
+                    session_id: getAiPowerSearchSessionId(AI_POWER_SEARCH_SSA_SESSION_KEY),
+                    query: trimmed,
+                },
+                { headers: { 'Content-Type': 'application/json' } }
+            );
 
-            const res = await axios.post(`${baseURL}/Explore_sla/`, jsonBody, {
-                headers: { 'Content-Type': 'application/json' },
-            });
-            const data = res?.data;
-            if (data?.session_id) setSessionId(data.session_id);
-            setMessages(prev => [...prev, { type: 'bot', exploreData: data }]);
+            const parsed = parseAiPowerSearchResponse(res?.data);
+            if (parsed.sessionId) {
+                setAiPowerSearchSessionId(parsed.sessionId, AI_POWER_SEARCH_SSA_SESSION_KEY);
+            }
+            setMessages(prev => [
+                ...prev,
+                {
+                    type: 'bot',
+                    powerSearch: {
+                        markdown: parsed.markdown,
+                        actions: parsed.actions,
+                    },
+                },
+            ]);
         } catch (err) {
-            const detail = err?.response?.data?.detail ?? err?.response?.data?.message ?? err.message ?? 'Something went wrong.';
-            setMessages(prev => [...prev, { type: 'bot', text: `Error: ${detail}`, isError: true }]);
+            setMessages(prev => [
+                ...prev,
+                { type: 'bot', text: `Error: ${getAiPowerSearchError(err)}`, isError: true },
+            ]);
         } finally {
             setIsLoading(false);
         }
@@ -156,8 +174,8 @@ const NlpChatBot = ({ onClose }) => {
                 <div className="bot-header-left">
                     <img src={nlpLogo} alt="NLP Analysis" className="bot-logo" />
                     <div>
-                        <div className="bot-title">SLA NLP Analysis</div>
-                        <div className="bot-subtitle">Ask SLA breach data in natural language</div>
+                        <div className="bot-title">AI Power Search</div>
+                        <div className="bot-subtitle">SAP troubleshooting and suggested actions</div>
                     </div>
                 </div>
                 <button className="bot-close" onClick={onClose}>✕</button>
@@ -166,18 +184,12 @@ const NlpChatBot = ({ onClose }) => {
             <div className="bot-messages">
                 {messages.map((msg, idx) => (
                     <div key={idx} className={`bot-msg ${msg.type} ${msg.isError ? 'error' : ''}`}>
-                        {msg.exploreData ? (
+                        {msg.powerSearch ? (
                             <div className="sap-response">
-                                {msg.exploreData.explanation && (
-                                    <div className="sap-friendly-answer">{msg.exploreData.explanation}</div>
-                                )}
-                                {msg.exploreData.type === 'table' && Array.isArray(msg.exploreData.payload) ? (
-                                    <ExploreTable rows={msg.exploreData.payload} />
-                                ) : (
-                                    <div className="sap-friendly-answer">
-                                        {String(msg.exploreData.payload ?? msg.exploreData.detail ?? 'No response.')}
-                                    </div>
-                                )}
+                                <PowerSearchBotReply
+                                    markdown={msg.powerSearch.markdown}
+                                    actions={msg.powerSearch.actions}
+                                />
                             </div>
                         ) : (
                             <span>{msg.text}</span>
@@ -198,7 +210,7 @@ const NlpChatBot = ({ onClose }) => {
                     className="bot-input"
                     value={message}
                     onChange={e => setMessage(e.target.value)}
-                    placeholder="e.g. How many work in progress tickets are there?"
+                    placeholder="e.g. Account Determination ID configuration in SAP SD"
                     disabled={isLoading}
                 />
                 <button type="submit" className="bot-send" disabled={isLoading || !message.trim()}>Send</button>
@@ -310,7 +322,7 @@ const SelfServiceActions = () => {
         // { id: 'btp', title: 'SAP ECC', desc: 'Self Service for SAP ECC system.', logo: eccLogo, available: false, badge: 'Soon' },
         // { id: 'batch', title: 'SAP S/4 Cloud', desc: 'Self Service for SAP S/4 Cloud system.', logo: s4CloudLogo, available: false, badge: 'Soon' },
         // { id: 'sop-know-errors', title: 'SOP - Know Errors', desc: 'Standard operating procedures and known errors.', logo: sopLogo, available: false, badge: 'Coming Soon' },
-        { id: 'nlp-analysis', title: 'NLP Analysis', desc: 'Ask SLA breach data in natural language.', logo: nlpLogo, available: true, badge: 'Live' },
+        { id: 'nlp-analysis', title: 'NLP Analysis', desc: 'AI-powered SAP search with suggested actions.', logo: nlpLogo, available: true, badge: 'Live' },
     ];
 
     return (
