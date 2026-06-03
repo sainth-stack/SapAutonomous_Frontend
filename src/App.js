@@ -18,6 +18,7 @@ import WebSuggestedActions from "./pages/web-suggested-actions";
 import SelfServiceActions from "./pages/self-service-actions";
 import AdminRoles from "./pages/admin/Roles";
 import AdminUsers from "./pages/admin/Users";
+import AdminConfiguration from "./pages/admin/Configuration";
 import { migrateLegacyAuthSession } from "./utils/authSession";
 
 function App() {
@@ -79,6 +80,7 @@ function App() {
             {/* Admin - super admin only enforced in layout */}
             <Route path="/admin/roles" element={<AdminRoles />} />
             <Route path="/admin/users" element={<AdminUsers />} />
+            <Route path="/admin/configuration" element={<AdminConfiguration />} />
 
             {/* 404 fallback */}
             <Route path="*" element={<ComingSoon />} />
