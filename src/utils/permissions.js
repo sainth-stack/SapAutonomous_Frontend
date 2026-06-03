@@ -4,7 +4,7 @@
  * Admin-only routes (roles/users) are only in ALL_ADMIN_PATHS.
  */
 export const LIMITED_USER_ALLOWED_PATHS = ['/kedb', '/suggested-actions-depository', '/web-suggested-actions'];
-export const ALL_ADMIN_PATHS = ['/admin/roles', '/admin/users'];
+export const ALL_ADMIN_PATHS = ['/admin/roles', '/admin/users', '/admin/configuration'];
 
 export const DEFAULT_PATH_FOR_LIMITED_USER = '/kedb';
 

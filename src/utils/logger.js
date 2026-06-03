@@ -128,6 +128,10 @@ const PATH_LOG_CONFIG = {
   '/admin/users': {
     moduleName: 'Admin — Users',
     programName: 'admin/Users/index.js'
+  },
+  '/admin/configuration': {
+    moduleName: 'Admin — System Configuration',
+    programName: 'admin/Configuration/index.js'
   }
 };
 
