@@ -81,6 +81,23 @@ export function parseAiPowerSearchResponse(data) {
   return { sessionId, markdown: 'No results found.', actions: null };
 }
 
+/** Format parsed AI power search result as HTML for ChatBot bubbles */
+export function formatAiPowerSearchHtml(parsed) {
+  if (parsed?.actions?.length) {
+    return parsed.actions
+      .map((item, index) => {
+        const title = item.title || `Suggestion ${index + 1}`;
+        const link = item.url
+          ? `<p><a href="${item.url}" target="_blank" rel="noopener noreferrer">View reference</a></p>`
+          : '';
+        const body = (item.body || '').replace(/\n/g, '<br/>');
+        return `<h3 style="margin:0 0 8px;font-size:15px;color:#1a202c;">${title}</h3>${link}<div>${body}</div>`;
+      })
+      .join('<hr style="margin:14px 0;border:none;border-top:1px solid #e2e8f0;" />');
+  }
+  return (parsed?.markdown || 'No results found.').replace(/\n/g, '<br/>');
+}
+
 export function getAiPowerSearchError(err) {
   const data = err?.response?.data;
   if (typeof data === 'string' && data.trim()) return data;
