@@ -9,6 +9,7 @@ const INITIAL_MESSAGE =
   "Hello! I'm your AI Power Search assistant. Describe your SAP issue and I'll search for suggested actions and fixes.";
 
 function getBotReply(data) {
+  if (typeof data?.answer === 'string' && data.answer.trim()) return data.answer.trim();
   if (typeof data?.response === 'string' && data.response.trim()) return data.response.trim();
   if (typeof data?.result === 'string' && data.result.trim()) return data.result.trim();
   return 'No results found.';
@@ -88,7 +89,15 @@ const WebSuggestedActions = () => {
                   <span>{msg.text}</span>
                 ) : (
                   <div className="text-response wsa-markdown">
-                    <ReactMarkdown>{msg.text}</ReactMarkdown>
+                    <ReactMarkdown
+                      components={{
+                        a: ({ node, ...props }) => (
+                          <a {...props} target="_blank" rel="noopener noreferrer" />
+                        ),
+                      }}
+                    >
+                      {msg.text}
+                    </ReactMarkdown>
                   </div>
                 )}
               </div>
