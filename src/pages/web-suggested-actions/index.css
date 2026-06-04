@@ -1,4 +1,21 @@
-/* Match KEDB chat layout */
-.web-suggested-chatbot .bot-message {
-  max-width: 75% !important;
+.wsa-chat {
+  margin: 20px auto;
+}
+
+.wsa-markdown {
+  text-align: left;
+  line-height: 1.6;
+}
+
+.wsa-markdown p {
+  margin: 0 0 0.5rem;
+}
+
+.wsa-markdown a {
+  color: #2563eb;
+  word-break: break-word;
+}
+
+.wsa-error {
+  color: #dc2626;
 }
