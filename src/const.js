@@ -41,3 +41,13 @@ export const sendEmailNotificationURL = `${baseURL}/configuration/send-email`;
 /** System configuration (database credentials, URLs, etc.) */
 export const configurationsURL = `${baseURL}/configurations`;
 export const configurationsSaveURL = `${baseURL}/configurations/save`;
+
+/** Luxottica Helpdesk — incident detail (Manage Queue ticket link) */
+export const luxotticaHelpdeskLoginUrl =
+  'https://helpdesk.luxottica.com/HDAPortal/Authentication/Login?ReturnUrl=%2fHDAPortal%2f';
+
+export function getLuxotticaTicketUrl(requestId) {
+  const id = String(requestId ?? '').trim();
+  if (!id) return null;
+  return `${luxotticaHelpdeskLoginUrl}#/WSCView/Detail/${id}$entity=Incident`;
+}
