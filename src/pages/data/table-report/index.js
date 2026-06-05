@@ -265,18 +265,18 @@ const TableReport = ({ data, filters, onFilterChange, onResetFilters, getUniqueV
                 const ticketUrl = getLuxotticaTicketUrl(ticket.ticketId);
                 return (
                 <tr key={`${currentPage}-${ticket.ticketId}-${index}`}>
-                <td className="text-blue-600 font-medium">
+                <td>
                   {ticketUrl ? (
                     <a
                       href={ticketUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="hover:underline"
+                      className="text-blue-600 font-medium underline hover:text-blue-800"
                     >
                       {ticket.ticketId}
                     </a>
                   ) : (
-                    ticket.ticketId || '—'
+                    <span className="font-medium">{ticket.ticketId || '—'}</span>
                   )}
                 </td>
                 <td>{ticket.creationDate}</td>
