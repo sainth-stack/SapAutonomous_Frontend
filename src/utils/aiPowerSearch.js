@@ -62,7 +62,7 @@ export function parseAiPowerSearchResponse(data) {
     return { sessionId, actions, markdown: null };
   }
 
-  const textKeys = ['response', 'result', 'answer', 'output', 'text', 'content', 'message'];
+  const textKeys = ['answer', 'response', 'result', 'output', 'text', 'content', 'message'];
   for (const key of textKeys) {
     const val = data[key];
     if (typeof val === 'string' && val.trim()) {
