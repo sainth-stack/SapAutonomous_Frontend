@@ -120,7 +120,7 @@ const WebSuggestedActions = () => {
               className="chatbot-input"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              placeholder="Describe your issue (e.g., SAP BTP connectivity failed with S/4HANA)"
+              placeholder="Describe your issue (Context for 20 conversations(Questions))"
               disabled={isLoading}
             />
             <button type="submit" className="send-button" disabled={isLoading || !message.trim()}>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import SharedFilters from '../filter/sharedReport';
 import SearchModal from '../../../components/SearchModal';
-import { baseURL } from '../../../const';
+import { baseURL, getLuxotticaTicketUrl } from '../../../const';
 import { getStoredUser } from '../../../utils/authSession';
 
 const getUploadedFileInfo = () => {
@@ -261,10 +261,23 @@ const TableReport = ({ data, filters, onFilterChange, onResetFilters, getUniqueV
           </thead>
           <tbody style={{ opacity: isLoading ? 0.5 : 1, transition: 'opacity 0.2s' }}>
             {data && data.length > 0 ? (
-              data.map((ticket, index) => (
+              data.map((ticket, index) => {
+                const ticketUrl = getLuxotticaTicketUrl(ticket.ticketId);
+                return (
                 <tr key={`${currentPage}-${ticket.ticketId}-${index}`}>
                 <td className="text-blue-600 font-medium">
-                  {ticket.ticketId}
+                  {ticketUrl ? (
+                    <a
+                      href={ticketUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:underline"
+                    >
+                      {ticket.ticketId}
+                    </a>
+                  ) : (
+                    ticket.ticketId || '—'
+                  )}
                 </td>
                 <td>{ticket.creationDate}</td>
                 <td>
@@ -310,7 +323,8 @@ const TableReport = ({ data, filters, onFilterChange, onResetFilters, getUniqueV
                   </span>
                 </td>
               </tr>
-            ))
+                );
+              })
             ) : (
               <tr>
                 <td colSpan={columns.length} className="text-center py-8 text-gray-500">
