@@ -33,10 +33,18 @@ const WebSuggestedActions = () => {
   const [sessionId, setSessionId] = useState('');
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
+  const imageUrlsRef = useRef([]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isLoading]);
+
+  useEffect(() => {
+    return () => {
+      imageUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+      imageUrlsRef.current = [];
+    };
+  }, []);
 
   const sendMessage = async (e) => {
     e.preventDefault();
@@ -102,9 +110,12 @@ const WebSuggestedActions = () => {
       return;
     }
 
+    const previewUrl = URL.createObjectURL(file);
+    imageUrlsRef.current.push(previewUrl);
+
     setMessages((prev) => [
       ...prev,
-      { type: 'user', text: `Uploaded image: ${file.name}` },
+      { type: 'user', imageUrl: previewUrl, imageName: file.name },
     ]);
     setLoadingLabel('Analyzing image…');
     setIsLoading(true);
@@ -160,10 +171,23 @@ const WebSuggestedActions = () => {
               className={`message-container ${msg.type === 'user' ? 'user-message-container' : 'bot-message-container'}`}
             >
               <div
-                className={`message ${msg.type === 'user' ? 'user-message' : 'bot-message'} ${msg.isError ? 'wsa-error' : ''}`}
+                className={`message ${msg.type === 'user' ? 'user-message' : 'bot-message'} ${msg.isError ? 'wsa-error' : ''} ${msg.imageUrl ? 'wsa-user-image-bubble' : ''}`}
               >
                 {msg.type === 'user' ? (
-                  <span>{msg.text}</span>
+                  msg.imageUrl ? (
+                    <div className="wsa-user-image-message">
+                      <img
+                        src={msg.imageUrl}
+                        alt={msg.imageName || 'Uploaded image'}
+                        className="wsa-uploaded-image"
+                      />
+                      {msg.imageName && (
+                        <span className="wsa-image-filename">{msg.imageName}</span>
+                      )}
+                    </div>
+                  ) : (
+                    <span>{msg.text}</span>
+                  )
                 ) : (
                   <div className="text-response wsa-markdown">
                     <ReactMarkdown
