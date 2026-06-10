@@ -78,6 +78,7 @@ const KEDB = () => {
       showFileInfo={false}
       showRecentChats={true}
       showSessionInfo={false}
+      enableImageUpload={true}
       className="kedb-chatbot"
       maxWidth="1400px"
       isKnowledgeBase={true}

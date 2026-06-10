@@ -1,12 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import axios from 'axios';
-import { aiPowerSearchURL } from '../../const';
+import { MdAttachFile } from 'react-icons/md';
+import { aiPowerSearchURL, aiPowerSearchImageURL } from '../../const';
 import '../../components/ChatBot/styles.css';
 import './index.css';
 
 const INITIAL_MESSAGE =
   "Hello! I'm your AI Power Search assistant. Describe your SAP issue and I'll search for suggested actions and fixes.";
+
+const MAX_IMAGE_SIZE_MB = 10;
+const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/bmp'];
 
 function getBotReply(data) {
   if (typeof data?.answer === 'string' && data.answer.trim()) return data.answer.trim();
@@ -25,12 +29,14 @@ const WebSuggestedActions = () => {
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([{ type: 'bot', text: INITIAL_MESSAGE }]);
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingLabel, setLoadingLabel] = useState('Thinking…');
   const [sessionId, setSessionId] = useState('');
   const messagesEndRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, isLoading]);
 
   const sendMessage = async (e) => {
     e.preventDefault();
@@ -39,6 +45,7 @@ const WebSuggestedActions = () => {
 
     setMessages((prev) => [...prev, { type: 'user', text: trimmed }]);
     setMessage('');
+    setLoadingLabel('Thinking…');
     setIsLoading(true);
 
     try {
@@ -66,6 +73,74 @@ const WebSuggestedActions = () => {
     }
   };
 
+  const handleImageSelect = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || isLoading) return;
+
+    if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          type: 'bot',
+          text: 'Error: Please upload a valid image file (JPEG, PNG, GIF, WebP, or BMP).',
+          isError: true,
+        },
+      ]);
+      return;
+    }
+
+    if (file.size > MAX_IMAGE_SIZE_MB * 1024 * 1024) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          type: 'bot',
+          text: `Error: Image must be smaller than ${MAX_IMAGE_SIZE_MB} MB.`,
+          isError: true,
+        },
+      ]);
+      return;
+    }
+
+    setMessages((prev) => [
+      ...prev,
+      { type: 'user', text: `Uploaded image: ${file.name}` },
+    ]);
+    setLoadingLabel('Analyzing image…');
+    setIsLoading(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+      if (sessionId) {
+        formData.append('session_id', sessionId);
+      }
+
+      const { data } = await axios.post(aiPowerSearchImageURL, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+
+      if (data?.session_id) {
+        setSessionId(String(data.session_id));
+      }
+
+      setMessages((prev) => [...prev, { type: 'bot', text: getBotReply(data) }]);
+    } catch (err) {
+      setMessages((prev) => [
+        ...prev,
+        { type: 'bot', text: `Error: ${getErrorMessage(err)}`, isError: true },
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const openFilePicker = () => {
+    if (!isLoading) {
+      fileInputRef.current?.click();
+    }
+  };
+
   return (
     <div className="chatbot-container wsa-chat" style={{ maxWidth: '1400px' }}>
       <div className="chatbot-main">
@@ -84,7 +159,9 @@ const WebSuggestedActions = () => {
               key={idx}
               className={`message-container ${msg.type === 'user' ? 'user-message-container' : 'bot-message-container'}`}
             >
-              <div className={`message ${msg.type === 'user' ? 'user-message' : 'bot-message'} ${msg.isError ? 'wsa-error' : ''}`}>
+              <div
+                className={`message ${msg.type === 'user' ? 'user-message' : 'bot-message'} ${msg.isError ? 'wsa-error' : ''}`}
+              >
                 {msg.type === 'user' ? (
                   <span>{msg.text}</span>
                 ) : (
@@ -106,7 +183,10 @@ const WebSuggestedActions = () => {
           {isLoading && (
             <div className="message-container bot-message-container">
               <div className="message bot-message loading-message">
-                <span>Thinking…</span>
+                <div className="wsa-loading">
+                  <span className="wsa-spinner" aria-hidden="true" />
+                  <span>{loadingLabel}</span>
+                </div>
               </div>
             </div>
           )}
@@ -115,6 +195,26 @@ const WebSuggestedActions = () => {
 
         <form onSubmit={sendMessage} className="chatbot-input-form">
           <div className="input-container">
+            <input
+              ref={fileInputRef}
+              type="file"
+              className="wsa-file-input"
+              accept="image/jpeg,image/png,image/gif,image/webp,image/bmp"
+              onChange={handleImageSelect}
+              disabled={isLoading}
+              aria-hidden="true"
+              tabIndex={-1}
+            />
+            <button
+              type="button"
+              className="wsa-attach-button"
+              onClick={openFilePicker}
+              disabled={isLoading}
+              aria-label="Upload image"
+              title="Upload image"
+            >
+              <MdAttachFile size={22} />
+            </button>
             <input
               type="text"
               className="chatbot-input"
