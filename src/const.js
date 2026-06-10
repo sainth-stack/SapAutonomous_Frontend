@@ -27,6 +27,9 @@ export const powerSearchURL = 'https://api.bainocular.seleccionconsulting.com/po
 /** AI Power Search (session-aware) — used by Web Suggested Actions */
 export const aiPowerSearchURL = 'https://api.bainocular.seleccionconsulting.com/ai-power-search';
 
+/** AI Power Search image upload — used by Web Suggested Actions */
+export const aiPowerSearchImageURL = 'https://api.bainocular.seleccionconsulting.com/chat-image';
+
 /** Background Job Monitoring – base URL; job list feed at `backgroundJobMonitorFeedURL` */
 export const backgroundJobMonitorBaseURL = 'https://api.bainocular.seleccionconsulting.com';
 

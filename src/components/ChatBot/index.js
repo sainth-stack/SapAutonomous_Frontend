@@ -1,10 +1,48 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Plot from 'react-plotly.js';
+import axios from 'axios';
 import { CircularProgress } from '@mui/material';
 import { Table } from 'antd';
-import { baseURL } from '../../const';
+import { MdAttachFile } from 'react-icons/md';
+import { baseURL, aiPowerSearchURL, aiPowerSearchImageURL } from '../../const';
 import { getLogMetaFromPath } from '../../utils/logger';
+import {
+  getAiPowerSearchSessionId,
+  setAiPowerSearchSessionId,
+  parseAiPowerSearchResponse,
+  formatAiPowerSearchHtml,
+  getAiPowerSearchError,
+  AI_POWER_SEARCH_SESSION_KEY,
+} from '../../utils/aiPowerSearch';
 import './styles.css';
+
+const MAX_IMAGE_SIZE_MB = 10;
+const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/bmp'];
+
+const JSON_HEADERS = { 'Content-Type': 'application/json' };
+
+function isAbsoluteUrl(url) {
+  return typeof url === 'string' && /^https?:\/\//i.test(url.trim());
+}
+
+/** Never prefix baseURL when endpoint is already absolute (fixes double-URL in production). */
+function resolveEndpoint(endpoint, fallback) {
+  if (isAbsoluteUrl(endpoint)) return endpoint.trim();
+  if (isAbsoluteUrl(fallback)) return fallback.trim();
+  const base = baseURL.replace(/\/$/, '');
+  const path = (endpoint || fallback || '').trim();
+  const rel = path.startsWith('/') ? path : `/${path}`;
+  return `${base}${rel}`;
+}
+
+function isPowerSearchMode(isAiPowerSearch, endpoint) {
+  if (isAiPowerSearch) return true;
+  if (typeof endpoint === 'string' && /ai-power-search/i.test(endpoint)) return true;
+  if (typeof window !== 'undefined' && window.location.pathname === '/web-suggested-actions') {
+    return true;
+  }
+  return false;
+}
 
 const ChatBot = ({ 
   title = "AI Assistant",
@@ -18,6 +56,9 @@ const ChatBot = ({
   className = "",
   maxWidth = "1200px",
   isKnowledgeBase = false,
+  isAiPowerSearch = false,
+  enableImageUpload = false,
+  imageUploadURL = aiPowerSearchImageURL,
   onApiStatusLog = null
 }) => {
   const [message, setMessage] = useState('');
@@ -29,6 +70,7 @@ const ChatBot = ({
   const [uploadedFile, setUploadedFile] = useState(null);
   const [sessionId, setSessionId] = useState(null);
   const messagesEndRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   // Check for uploaded file from localStorage on component mount
   useEffect(() => {
@@ -40,6 +82,117 @@ const ChatBot = ({
 
   const handleMessageChange = (e) => {
     setMessage(e.target.value);
+  };
+
+  const handleImageSelect = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || isLoading) return;
+
+    if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          type: 'bot',
+          responseType: 'text',
+          content: 'Error: Please upload a valid image file (JPEG, PNG, GIF, WebP, or BMP).',
+        },
+      ]);
+      return;
+    }
+
+    if (file.size > MAX_IMAGE_SIZE_MB * 1024 * 1024) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          type: 'bot',
+          responseType: 'text',
+          content: `Error: Image must be smaller than ${MAX_IMAGE_SIZE_MB} MB.`,
+        },
+      ]);
+      return;
+    }
+
+    setMessages((prev) => [
+      ...prev,
+      { type: 'user', content: `Uploaded image: ${file.name}`, question: true },
+      { type: 'bot', isLoading: true, loadingLabel: 'Analyzing image...' },
+    ]);
+    setIsLoading(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+      if (sessionId) {
+        formData.append('session_id', sessionId);
+      }
+
+      const { data } = await axios.post(imageUploadURL, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+
+      if (typeof onApiStatusLog === 'function' && (isKnowledgeBase || isAiPowerSearch)) {
+        const { moduleName } = getLogMetaFromPath(window.location.pathname);
+        onApiStatusLog({
+          pathname: window.location.pathname,
+          logType: 'S',
+          content: `${moduleName} — image upload API success`,
+        });
+      }
+
+      if (data?.session_id) {
+        setSessionId(String(data.session_id));
+      }
+
+      const parsed = parseAiPowerSearchResponse(data);
+      const formattedResponse = formatAiPowerSearchHtml(parsed);
+
+      setMessages((prev) =>
+        prev.filter((msg) => !msg.isLoading).concat([
+          {
+            type: 'bot',
+            responseType: 'text',
+            content: formattedResponse,
+          },
+        ])
+      );
+
+      if (showRecentChats) {
+        setRecentChats((prev) => [
+          ...prev,
+          { question: `Image: ${file.name}`, answer: 'Image analysis completed' },
+        ]);
+      }
+    } catch (error) {
+      console.error('Image upload error:', error);
+
+      if (typeof onApiStatusLog === 'function' && (isKnowledgeBase || isAiPowerSearch)) {
+        const { moduleName } = getLogMetaFromPath(window.location.pathname);
+        onApiStatusLog({
+          pathname: window.location.pathname,
+          logType: 'E',
+          content: `${moduleName} — image upload API failed: ${getAiPowerSearchError(error)}`,
+        });
+      }
+
+      setMessages((prev) =>
+        prev.filter((msg) => !msg.isLoading).concat([
+          {
+            type: 'bot',
+            responseType: 'text',
+            content: `Error: ${getAiPowerSearchError(error)}`,
+          },
+        ])
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const openFilePicker = () => {
+    if (!isLoading) {
+      fileInputRef.current?.click();
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -63,53 +216,44 @@ const ChatBot = ({
     setIsLoading(true);
     const userMessage = message;
 
+    const powerSearchMode = isPowerSearchMode(isAiPowerSearch, endpoint);
+
     try {
-      let apiEndpoint, requestBody, headers, response, data;
+      let data;
 
-      if (isKnowledgeBase) {
-        // Route KB queries to provided endpoint (supports absolute URL) with JSON body
-        const isAbsolute = typeof endpoint === 'string' && /^https?:\/\//i.test(endpoint);
-        apiEndpoint = isAbsolute
-          ? endpoint
-          : (baseURL + (endpoint || '/vector_search/'));
-
-        headers = {
-          'Content-Type': 'application/json',
-          'Accept': '*/*'
-        };
-        requestBody = JSON.stringify({ query: userMessage });
-
-        response = await fetch(apiEndpoint, {
-          method: 'POST',
-          headers,
-          body: requestBody
-        });
+      if (powerSearchMode) {
+        const url = resolveEndpoint(endpoint, aiPowerSearchURL);
+        const res = await axios.post(
+          url,
+          {
+            session_id: getAiPowerSearchSessionId(),
+            query: userMessage,
+          },
+          { headers: JSON_HEADERS }
+        );
+        data = res.data;
+      } else if (isKnowledgeBase) {
+        const url = resolveEndpoint(endpoint, '/vector_search/');
+        const res = await axios.post(
+          url,
+          { query: userMessage },
+          { headers: JSON_HEADERS }
+        );
+        data = res.data;
       } else {
-        // Original API configuration
         const formData = new FormData();
         formData.append('query', userMessage);
-        
-        // Include session_id if we have one
         if (sessionId) {
           formData.append('session_id', sessionId);
         }
+        const url = resolveEndpoint(endpoint, '/Explore_sla/');
+        const res = await axios.post(url, formData);
+        data = res.data;
+      }
 
-        apiEndpoint = baseURL + endpoint;
-        
-        response = await fetch(apiEndpoint, {
-          method: 'POST',
-          body: formData,
-        });
-      }
-    
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
-    
-      data = await response.json();
       console.log('Backend response:', data);
 
-      if (isKnowledgeBase && typeof onApiStatusLog === 'function') {
+      if ((isKnowledgeBase || powerSearchMode) && typeof onApiStatusLog === 'function') {
         const { moduleName } = getLogMetaFromPath(window.location.pathname);
         onApiStatusLog({
           pathname: window.location.pathname,
@@ -118,7 +262,27 @@ const ChatBot = ({
         });
       }
 
-      if (isKnowledgeBase) {
+      if (powerSearchMode) {
+        const parsed = parseAiPowerSearchResponse(data);
+        if (parsed.sessionId) {
+          setAiPowerSearchSessionId(parsed.sessionId);
+          setSessionId(parsed.sessionId);
+        }
+        const formattedResponse = formatAiPowerSearchHtml(parsed);
+
+        setMessages(prev => prev.filter(msg => !msg.isLoading).concat([{
+          type: 'bot',
+          responseType: 'text',
+          content: formattedResponse,
+        }]));
+
+        if (showRecentChats) {
+          setRecentChats(prev => [...prev, {
+            question: userMessage,
+            answer: 'AI Power Search completed',
+          }]);
+        }
+      } else if (isKnowledgeBase) {
         const responseText = typeof data?.result === 'string' 
           ? data.result 
           : (typeof data?.response === 'string' ? data.response : (typeof data?.payload === 'string' ? data.payload : ''));
@@ -165,12 +329,16 @@ const ChatBot = ({
     } catch (error) {
       console.error('Error:', error);
 
-      if (isKnowledgeBase && typeof onApiStatusLog === 'function') {
+      if ((isKnowledgeBase || powerSearchMode) && typeof onApiStatusLog === 'function') {
         const { moduleName } = getLogMetaFromPath(window.location.pathname);
+        const errMsg =
+          error?.response?.data?.detail ||
+          error?.message ||
+          'Unknown error';
         onApiStatusLog({
           pathname: window.location.pathname,
           logType: 'E',
-          content: `${moduleName} — query API failed: ${error.message || 'Unknown error'}`
+          content: `${moduleName} — query API failed: ${errMsg}`
         });
       }
       
@@ -219,6 +387,13 @@ const ChatBot = ({
     setMessages([{ type: 'bot', content: initialMessage }]);
     setRecentChats([]);
     setSessionId(null);
+    if (isPowerSearchMode(isAiPowerSearch, endpoint)) {
+      try {
+        sessionStorage.removeItem(AI_POWER_SEARCH_SESSION_KEY);
+      } catch {
+        /* ignore */
+      }
+    }
   };
 
   return (
@@ -264,7 +439,7 @@ const ChatBot = ({
                 {msg.isLoading ? (
                   <div className="loading-container">
                     <CircularProgress size={20} className="loading-spinner" />
-                    <span>Thinking...</span>
+                    <span>{msg.loadingLabel || 'Thinking...'}</span>
                   </div>
                 ) : (
                   <>
@@ -357,6 +532,30 @@ const ChatBot = ({
         
         <form onSubmit={handleSubmit} className="chatbot-input-form">
           <div className="input-container">
+            {enableImageUpload && (
+              <>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  className="chatbot-file-input"
+                  accept="image/jpeg,image/png,image/gif,image/webp,image/bmp"
+                  onChange={handleImageSelect}
+                  disabled={isLoading}
+                  aria-hidden="true"
+                  tabIndex={-1}
+                />
+                <button
+                  type="button"
+                  className="chatbot-attach-button"
+                  onClick={openFilePicker}
+                  disabled={isLoading}
+                  aria-label="Upload image"
+                  title="Upload image"
+                >
+                  <MdAttachFile size={22} />
+                </button>
+              </>
+            )}
             <input
               type="text"
               className="chatbot-input"
