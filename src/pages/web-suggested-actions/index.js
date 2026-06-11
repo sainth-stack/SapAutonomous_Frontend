@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import axios from 'axios';
-import { MdAttachFile } from 'react-icons/md';
+import { MdAttachFile, MdClose } from 'react-icons/md';
 import { aiPowerSearchURL, aiPowerSearchImageURL } from '../../const';
 import '../../components/ChatBot/styles.css';
 import './index.css';
@@ -31,6 +31,7 @@ const WebSuggestedActions = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [loadingLabel, setLoadingLabel] = useState('Thinking…');
   const [sessionId, setSessionId] = useState('');
+  const [pendingImage, setPendingImage] = useState(null);
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
   const imageUrlsRef = useRef([]);
@@ -46,10 +47,56 @@ const WebSuggestedActions = () => {
     };
   }, []);
 
+  const removePendingImage = () => {
+    if (pendingImage?.previewUrl) {
+      URL.revokeObjectURL(pendingImage.previewUrl);
+      imageUrlsRef.current = imageUrlsRef.current.filter((url) => url !== pendingImage.previewUrl);
+    }
+    setPendingImage(null);
+  };
+
   const sendMessage = async (e) => {
     e.preventDefault();
     const trimmed = message.trim();
-    if (!trimmed || isLoading) return;
+    if ((!trimmed && !pendingImage) || isLoading) return;
+
+    if (pendingImage) {
+      const { file, previewUrl, name } = pendingImage;
+      const userMsg = { type: 'user', imageUrl: previewUrl, imageName: name };
+      if (trimmed) userMsg.text = trimmed;
+
+      setPendingImage(null);
+      setMessage('');
+      setMessages((prev) => [...prev, userMsg]);
+      setLoadingLabel('Analyzing image…');
+      setIsLoading(true);
+
+      try {
+        const formData = new FormData();
+        formData.append('image', file);
+        if (sessionId) {
+          formData.append('session_id', sessionId);
+        }
+
+        const { data } = await axios.post(aiPowerSearchImageURL, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+
+        if (data?.session_id) {
+          setSessionId(String(data.session_id));
+        }
+
+        setMessages((prev) => [...prev, { type: 'bot', text: getBotReply(data) }]);
+      } catch (err) {
+        setMessages((prev) => [
+          ...prev,
+          { type: 'bot', text: `Error: ${getErrorMessage(err)}`, isError: true },
+        ]);
+      } finally {
+        setIsLoading(false);
+      }
+      return;
+    }
 
     setMessages((prev) => [...prev, { type: 'user', text: trimmed }]);
     setMessage('');
@@ -81,7 +128,7 @@ const WebSuggestedActions = () => {
     }
   };
 
-  const handleImageSelect = async (e) => {
+  const handleImageSelect = (e) => {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file || isLoading) return;
@@ -110,40 +157,14 @@ const WebSuggestedActions = () => {
       return;
     }
 
+    if (pendingImage?.previewUrl) {
+      URL.revokeObjectURL(pendingImage.previewUrl);
+      imageUrlsRef.current = imageUrlsRef.current.filter((url) => url !== pendingImage.previewUrl);
+    }
+
     const previewUrl = URL.createObjectURL(file);
     imageUrlsRef.current.push(previewUrl);
-
-    setMessages((prev) => [
-      ...prev,
-      { type: 'user', imageUrl: previewUrl, imageName: file.name },
-    ]);
-    setLoadingLabel('Analyzing image…');
-    setIsLoading(true);
-
-    try {
-      const formData = new FormData();
-      formData.append('image', file);
-      if (sessionId) {
-        formData.append('session_id', sessionId);
-      }
-
-      const { data } = await axios.post(aiPowerSearchImageURL, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-
-      if (data?.session_id) {
-        setSessionId(String(data.session_id));
-      }
-
-      setMessages((prev) => [...prev, { type: 'bot', text: getBotReply(data) }]);
-    } catch (err) {
-      setMessages((prev) => [
-        ...prev,
-        { type: 'bot', text: `Error: ${getErrorMessage(err)}`, isError: true },
-      ]);
-    } finally {
-      setIsLoading(false);
-    }
+    setPendingImage({ file, previewUrl, name: file.name });
   };
 
   const openFilePicker = () => {
@@ -184,6 +205,7 @@ const WebSuggestedActions = () => {
                       {msg.imageName && (
                         <span className="wsa-image-filename">{msg.imageName}</span>
                       )}
+                      {msg.text && <span className="wsa-image-caption">{msg.text}</span>}
                     </div>
                   ) : (
                     <span>{msg.text}</span>
@@ -218,6 +240,27 @@ const WebSuggestedActions = () => {
         </div>
 
         <form onSubmit={sendMessage} className="chatbot-input-form">
+          {pendingImage && (
+            <div className="wsa-pending-attachment">
+              <img
+                src={pendingImage.previewUrl}
+                alt=""
+                className="wsa-pending-thumb"
+              />
+              <span className="wsa-pending-name" title={pendingImage.name}>
+                {pendingImage.name}
+              </span>
+              <button
+                type="button"
+                className="wsa-pending-remove"
+                onClick={removePendingImage}
+                disabled={isLoading}
+                aria-label="Remove image"
+              >
+                <MdClose size={18} />
+              </button>
+            </div>
+          )}
           <div className="input-container">
             <input
               ref={fileInputRef}
@@ -247,7 +290,11 @@ const WebSuggestedActions = () => {
               placeholder="Describe your issue (Context for 20 conversations(Questions))"
               disabled={isLoading}
             />
-            <button type="submit" className="send-button" disabled={isLoading || !message.trim()}>
+            <button
+              type="submit"
+              className="send-button"
+              disabled={isLoading || (!message.trim() && !pendingImage)}
+            >
               Send
             </button>
           </div>

@@ -112,6 +112,66 @@
   white-space: nowrap;
 }
 
+.wsa-image-caption {
+  font-size: 14px;
+  color: #1a202c;
+  max-width: 280px;
+  word-break: break-word;
+}
+
+.wsa-pending-attachment {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  padding: 8px 12px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+}
+
+.wsa-pending-thumb {
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.wsa-pending-name {
+  flex: 1;
+  font-size: 14px;
+  color: #334155;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wsa-pending-remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  transition: color 0.2s ease, background-color 0.2s ease;
+}
+
+.wsa-pending-remove:hover:not(:disabled) {
+  color: #dc2626;
+  background: rgba(220, 38, 38, 0.1);
+}
+
+.wsa-pending-remove:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .wsa-loading {
   display: inline-flex;
   align-items: center;
