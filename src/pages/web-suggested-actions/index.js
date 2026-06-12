@@ -3,14 +3,12 @@ import ReactMarkdown from 'react-markdown';
 import axios from 'axios';
 import { MdAttachFile, MdClose } from 'react-icons/md';
 import { aiPowerSearchURL, aiPowerSearchImageURL } from '../../const';
+import { MAX_IMAGE_SIZE_MB, prepareImageAttachment } from '../../utils/imageUpload';
 import '../../components/ChatBot/styles.css';
 import './index.css';
 
 const INITIAL_MESSAGE =
   "Hello! I'm your AI Power Search assistant. Describe your SAP issue and I'll search for suggested actions and fixes.";
-
-const MAX_IMAGE_SIZE_MB = 10;
-const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/bmp'];
 
 function getBotReply(data) {
   if (typeof data?.answer === 'string' && data.answer.trim()) return data.answer.trim();
@@ -34,24 +32,12 @@ const WebSuggestedActions = () => {
   const [pendingImage, setPendingImage] = useState(null);
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
-  const imageUrlsRef = useRef([]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isLoading]);
 
-  useEffect(() => {
-    return () => {
-      imageUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
-      imageUrlsRef.current = [];
-    };
-  }, []);
-
   const removePendingImage = () => {
-    if (pendingImage?.previewUrl) {
-      URL.revokeObjectURL(pendingImage.previewUrl);
-      imageUrlsRef.current = imageUrlsRef.current.filter((url) => url !== pendingImage.previewUrl);
-    }
     setPendingImage(null);
   };
 
@@ -128,43 +114,68 @@ const WebSuggestedActions = () => {
     }
   };
 
+  const processImageFile = async (file, fallbackType) => {
+    if (!file || isLoading) return;
+
+    try {
+      const result = await prepareImageAttachment(file, fallbackType);
+
+      if (!result) return;
+
+      if (result.error === 'type') {
+        setMessages((prev) => [
+          ...prev,
+          {
+            type: 'bot',
+            text: 'Error: Please upload a valid image file (JPEG, PNG, GIF, WebP, or BMP).',
+            isError: true,
+          },
+        ]);
+        return;
+      }
+
+      if (result.error === 'size') {
+        setMessages((prev) => [
+          ...prev,
+          {
+            type: 'bot',
+            text: `Error: Image must be smaller than ${MAX_IMAGE_SIZE_MB} MB.`,
+            isError: true,
+          },
+        ]);
+        return;
+      }
+
+      setPendingImage(result);
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        {
+          type: 'bot',
+          text: 'Error: Could not read the pasted image. Please try again.',
+          isError: true,
+        },
+      ]);
+    }
+  };
+
   const handleImageSelect = (e) => {
     const file = e.target.files?.[0];
     e.target.value = '';
-    if (!file || isLoading) return;
+    processImageFile(file);
+  };
 
-    if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
-      setMessages((prev) => [
-        ...prev,
-        {
-          type: 'bot',
-          text: 'Error: Please upload a valid image file (JPEG, PNG, GIF, WebP, or BMP).',
-          isError: true,
-        },
-      ]);
-      return;
+  const handleInputPaste = (e) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    for (const item of items) {
+      if (item.type.startsWith('image/')) {
+        e.preventDefault();
+        processImageFile(item.getAsFile(), item.type);
+        return;
+      }
     }
-
-    if (file.size > MAX_IMAGE_SIZE_MB * 1024 * 1024) {
-      setMessages((prev) => [
-        ...prev,
-        {
-          type: 'bot',
-          text: `Error: Image must be smaller than ${MAX_IMAGE_SIZE_MB} MB.`,
-          isError: true,
-        },
-      ]);
-      return;
-    }
-
-    if (pendingImage?.previewUrl) {
-      URL.revokeObjectURL(pendingImage.previewUrl);
-      imageUrlsRef.current = imageUrlsRef.current.filter((url) => url !== pendingImage.previewUrl);
-    }
-
-    const previewUrl = URL.createObjectURL(file);
-    imageUrlsRef.current.push(previewUrl);
-    setPendingImage({ file, previewUrl, name: file.name });
   };
 
   const openFilePicker = () => {
@@ -287,6 +298,7 @@ const WebSuggestedActions = () => {
               className="chatbot-input"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
+              onPaste={handleInputPaste}
               placeholder="Describe your issue (Context for 20 conversations(Questions))"
               disabled={isLoading}
             />

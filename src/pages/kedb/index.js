@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ChatBot from '../../components/ChatBot';
 import { sendAppLog } from '../../utils/logger';
-import { vectorizerSimilarTicketsURL } from '../../const';
+import { contextSearchQueryURL } from '../../const';
 import './index.css';
 
 // Page visit is logged globally from AdminLayout; this page only wires KB API success/error logs.
@@ -73,12 +73,13 @@ const KEDB = () => {
       title="AI Content Search"
       subtitle="Search for solutions to similar incidents and issues"
       placeholder="Ask about errors, issues, or search for solutions..."
-      endpoint={vectorizerSimilarTicketsURL}
+      endpoint={contextSearchQueryURL}
       initialMessage="Hello! I'm your Knowledge Base assistant. Ask me about any errors, incidents, or issues you need help with. I can search through historical data to find similar cases and solutions."
       showFileInfo={false}
       showRecentChats={true}
       showSessionInfo={false}
       enableImageUpload={true}
+      imageUploadURL={contextSearchQueryURL}
       className="kedb-chatbot"
       maxWidth="1400px"
       isKnowledgeBase={true}

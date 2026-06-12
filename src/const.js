@@ -21,6 +21,10 @@ export const vectorizerProblemDescriptionURL =
 export const vectorizerSimilarTicketsURL =
   'https://api.bainocular.seleccionconsulting.com/v3/lux/similar-tickets/query';
 
+/** Context search — KEDB image + text query */
+export const contextSearchQueryURL =
+  'https://api.bainocular.seleccionconsulting.com/context-search/query';
+
 /** Legacy power search endpoint */
 export const powerSearchURL = 'https://api.bainocular.seleccionconsulting.com/power-search';
 
