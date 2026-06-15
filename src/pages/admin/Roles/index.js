@@ -8,7 +8,7 @@ const PERMISSION_SECTIONS = [
   { title: "Data Source", paths: ["/data-source"] },
   { title: "SLA", paths: ["/sla-resolution-response-time", "/self-monitoring"] },
   { title: "Incidents Management", paths: ["/incidents-percent", "/incidents-recurring", "/incident-management", "/incidents-auto-assignment"] },
-  { title: "Performance Monitoring", paths: ["/process-monitor/thanksgiving/configuration", "/process-monitor/thanksgiving", "/system-monitoring", "/system-monitoring/sap-system"] },
+  { title: "Performance Monitoring", paths: ["/process-monitor/thanksgiving/configuration", "/process-monitor/thanksgiving", "/system-monitoring", "/process-monitor/failed-idocs", "/system-monitoring/sap-system"] },
   { title: "Resource Effectiveness", paths: ["/resource-queue-length", "/resource-incidents-resolved", "/resource-time-per-resolution"] },
   { title: "Troubleshooting Assistance", paths: ["/kedb", "/suggested-actions-depository", "/web-suggested-actions"] },
   { title: "Value Creation", paths: ["/preventive-measures", "/self-service-actions"] },

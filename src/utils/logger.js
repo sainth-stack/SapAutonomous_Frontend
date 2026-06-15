@@ -57,6 +57,10 @@ const PATH_LOG_CONFIG = {
     moduleName: 'Batch Monitor — Thanksgiving',
     programName: 'batch-monitor/index.js'
   },
+  '/process-monitor/failed-idocs': {
+    moduleName: 'Failed IDOC Monitoring',
+    programName: 'failed-idoc-monitoring/index.js'
+  },
   '/system-monitoring': {
     moduleName: 'System Monitoring',
     programName: 'system-monitoring/index.js'

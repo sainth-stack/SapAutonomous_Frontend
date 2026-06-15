@@ -34,6 +34,7 @@ import {
   MdUploadFile,
   MdUnfoldLess,
   MdUnfoldMore,
+  MdErrorOutline,
 } from "react-icons/md";
 import { Link, useLocation } from "react-router-dom";
 import { getAllowedPaths } from "../../utils/permissions";
@@ -335,7 +336,7 @@ export default function Sidebar() {
                 )}
 
                 {/* Performance Monitoring Section - three items, no children */}
-                {(canShow("/process-monitor/thanksgiving/configuration") || canShow("/process-monitor/thanksgiving") || canShow("/system-monitoring")) && (
+                {(canShow("/process-monitor/thanksgiving/configuration") || canShow("/process-monitor/thanksgiving") || canShow("/process-monitor/failed-idocs") || canShow("/system-monitoring")) && (
                   <li className="sidebar-section">
                     <div
                       className="section-header"
@@ -376,6 +377,14 @@ export default function Sidebar() {
                             <Link to="/system-monitoring" className="sidebar-link">
                               <MdVisibility size={14} className="link-icon" />
                               <span className="link-text">System/Application Monitoring</span>
+                            </Link>
+                          </li>
+                        )}
+                        {canShow("/process-monitor/failed-idocs") && (
+                          <li className={`sidebar-item subsection ${location.pathname === "/process-monitor/failed-idocs" ? "active" : ""}`}>
+                            <Link to="/process-monitor/failed-idocs" className="sidebar-link">
+                              <MdErrorOutline size={14} className="link-icon" />
+                              <span className="link-text">Failed IDOC Monitoring</span>
                             </Link>
                           </li>
                         )}

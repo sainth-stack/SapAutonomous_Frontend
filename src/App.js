@@ -14,6 +14,7 @@ import ResourceEffectivenessConsultant from "./pages/resource-effectiveness-cons
 import SystemMonitoring from "./pages/system-monitoring";
 import BatchMonitor from "./pages/batch-monitor";
 import JobConfiguration from "./pages/batch-monitor/JobConfiguration";
+import FailedIdocMonitoring from "./pages/failed-idoc-monitoring";
 import WebSuggestedActions from "./pages/web-suggested-actions";
 import SelfServiceActions from "./pages/self-service-actions";
 import AdminRoles from "./pages/admin/Roles";
@@ -50,6 +51,7 @@ function App() {
             {/* Performance Monitoring Section - Background Job Monitoring */}
             <Route path="/process-monitor/thanksgiving/configuration" element={<JobConfiguration />} />
             <Route path="/process-monitor/thanksgiving" element={<BatchMonitor />} />
+            <Route path="/process-monitor/failed-idocs" element={<FailedIdocMonitoring />} />
             <Route path="/system-monitoring" element={<SystemMonitoring />} />
             <Route path="/system-monitoring/sap-system" element={<ComingSoon />} />
 

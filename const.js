@@ -32,6 +32,9 @@ export const backgroundJobMonitorBaseURL = 'https://api.bainocular.seleccioncons
 
 export const backgroundJobMonitorFeedURL = `${backgroundJobMonitorBaseURL}/background-jobs`;
 
+/** Failed IDOC Monitoring feed */
+export const failedIdocMonitorFeedURL = `${backgroundJobMonitorBaseURL}/failed-idocs`;
+
 /** Job & Application configuration CRUD (same host as `baseURL`) */
 export const configurationJobsURL = `${baseURL}/configuration/jobs`;
 export const configurationApplicationsURL = `${baseURL}/configuration/applications`;
