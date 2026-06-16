@@ -299,7 +299,7 @@ const WebSuggestedActions = () => {
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               onPaste={handleInputPaste}
-              placeholder="Describe your issue (Context for 20 conversations(Questions))"
+              placeholder="Ask your question or attach an image. I will help you solve it"
               disabled={isLoading}
             />
             <button
