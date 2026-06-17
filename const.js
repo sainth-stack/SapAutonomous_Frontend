@@ -2,6 +2,12 @@
 // export const baseURL = 'http://localhost:8000/api'
 export const baseURL = 'https://api.bainocular.seleccionconsulting.com/api'
 export const logApiURL = 'https://api.bainocular.seleccionconsulting.com/log';
+
+/** Default password assigned to new users — triggers mandatory reset on login */
+export const DEFAULT_USER_PASSWORD = 'Bainocular@123';
+
+/** Admin reset password endpoint */
+export const adminResetPasswordURL = `${baseURL}/admin/reset-password`;
 export const systemMonitoringHistoryURL = 'https://api.bainocular.seleccionconsulting.com/api/history';
 
 /** File Upload endpoint */
