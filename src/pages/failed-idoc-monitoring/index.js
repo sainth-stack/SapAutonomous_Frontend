@@ -9,8 +9,19 @@ import {
   configurationGlobalIntervalsURL,
 } from '../../const';
 import { parseIntervalToMs } from '../../utils/parseIntervalTime';
+import SearchModal from '../../components/SearchModal';
+import FailedIdocFilters from './FailedIdocFilters';
+import FailedIdocPagination from './FailedIdocPagination';
 import '../batch-monitor/index.css';
 import './index.css';
+
+const INITIAL_FILTERS = {
+  status: [],
+  messageType: [],
+  sender: [],
+  receiver: [],
+  errorCategory: [],
+};
 
 /** Parse OData /Date(ms)/, ISO date string, or epoch number → ms since epoch, or null */
 const parseDateValueToMs = (val) => {
@@ -58,7 +69,10 @@ const parseFeedResponse = (payload) => {
   return [];
 };
 
+const getRowField = (row, field) => String(row[field] ?? '').trim();
+
 const DEFAULT_POLL_MS = 5 * 60 * 1000;
+const ITEMS_PER_PAGE = 10;
 
 const FailedIdocMonitoring = () => {
   const [data, setData] = useState([]);
@@ -66,9 +80,13 @@ const FailedIdocMonitoring = () => {
   const [error, setError] = useState(null);
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
+  const [filters, setFilters] = useState(INITIAL_FILTERS);
   const [jobIntervalText, setJobIntervalText] = useState('');
   const [lastRefreshed, setLastRefreshed] = useState(null);
   const [nextRefresh, setNextRefresh] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedRow, setSelectedRow] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const pollIntervalMs = useMemo(
     () => parseIntervalToMs(jobIntervalText, DEFAULT_POLL_MS),
@@ -120,6 +138,32 @@ const FailedIdocMonitoring = () => {
     return () => clearInterval(interval);
   }, [fetchData, pollIntervalMs]);
 
+  const getUniqueValues = useCallback(
+    (field) => {
+      const set = new Set();
+      data.forEach((row) => {
+        const value = getRowField(row, field);
+        if (value) set.add(value);
+      });
+      return Array.from(set).sort((a, b) => a.localeCompare(b));
+    },
+    [data]
+  );
+
+  const handleFilterChange = (key, value) => {
+    setFilters((prev) => ({ ...prev, [key]: value }));
+    setCurrentPage(1);
+  };
+
+  const handleResetFilters = () => {
+    setFilters(INITIAL_FILTERS);
+    setCurrentPage(1);
+  };
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [fromDate, toDate]);
+
   const filteredData = useMemo(() => {
     let fromMs = null;
     let toMs = null;
@@ -135,14 +179,69 @@ const FailedIdocMonitoring = () => {
 
     return data.filter((row) => {
       const creationMs = parseDateValueToMs(row.creation_date);
-      if (creationMs == null) return !fromMs && !toMs;
-      if (fromMs != null && creationMs < fromMs) return false;
-      if (toMs != null && creationMs > toMs) return false;
+      if (creationMs == null) {
+        if (fromMs || toMs) return false;
+      } else {
+        if (fromMs != null && creationMs < fromMs) return false;
+        if (toMs != null && creationMs > toMs) return false;
+      }
+
+      if (filters.status.length > 0 && !filters.status.includes(getRowField(row, 'status'))) {
+        return false;
+      }
+      if (
+        filters.messageType.length > 0 &&
+        !filters.messageType.includes(getRowField(row, 'message_type'))
+      ) {
+        return false;
+      }
+      if (filters.sender.length > 0 && !filters.sender.includes(getRowField(row, 'sender'))) {
+        return false;
+      }
+      if (filters.receiver.length > 0 && !filters.receiver.includes(getRowField(row, 'receiver'))) {
+        return false;
+      }
+      if (
+        filters.errorCategory.length > 0 &&
+        !filters.errorCategory.includes(getRowField(row, 'error_category'))
+      ) {
+        return false;
+      }
+
       return true;
     });
-  }, [data, fromDate, toDate]);
+  }, [data, fromDate, toDate, filters]);
+
+  const { paginatedData, totalPages } = useMemo(() => {
+    const total = filteredData.length;
+    const pages = Math.max(1, Math.ceil(total / ITEMS_PER_PAGE));
+    const safePage = Math.min(currentPage, pages);
+    const start = (safePage - 1) * ITEMS_PER_PAGE;
+    return {
+      paginatedData: filteredData.slice(start, start + ITEMS_PER_PAGE),
+      totalPages: pages,
+    };
+  }, [filteredData, currentPage]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   const formatDateTime = (d) => (d && !Number.isNaN(d.getTime()) ? d.toLocaleString() : '—');
+
+  const handlePowerSearchClick = (row) => {
+    setSelectedRow(row);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedRow(null);
+  };
+
+  const totalColumns = DISPLAY_COLUMNS.length + 1;
 
   return (
     <div className="batch-monitor-page failed-idoc-page">
@@ -186,6 +285,22 @@ const FailedIdocMonitoring = () => {
         </div>
       )}
 
+      <FailedIdocFilters
+        filters={filters}
+        onFilterChange={handleFilterChange}
+        onResetFilters={handleResetFilters}
+        getUniqueValues={getUniqueValues}
+      />
+
+      <FailedIdocPagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        totalItems={filteredData.length}
+        itemsPerPage={ITEMS_PER_PAGE}
+        onPageChange={setCurrentPage}
+        disabled={loading}
+      />
+
       <div className="chart-container table-container">
         {loading ? (
           <div className="loading-container">
@@ -207,17 +322,18 @@ const FailedIdocMonitoring = () => {
                   {DISPLAY_COLUMNS.map((col) => (
                     <th key={col.key}>{col.label}</th>
                   ))}
+                  <th>Power Search</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredData.length === 0 ? (
+                {paginatedData.length === 0 ? (
                   <tr>
-                    <td colSpan={DISPLAY_COLUMNS.length} className="empty-cell">
+                    <td colSpan={totalColumns} className="empty-cell">
                       No data
                     </td>
                   </tr>
                 ) : (
-                  filteredData.map((row, idx) => (
+                  paginatedData.map((row, idx) => (
                     <tr
                       key={`${row.idoc_number ?? 'row'}-${idx}`}
                       className={
@@ -229,6 +345,19 @@ const FailedIdocMonitoring = () => {
                       {DISPLAY_COLUMNS.map((col) => (
                         <td key={col.key}>{formatDisplayCell(row, col)}</td>
                       ))}
+                      <td>
+                        {row.status_text != null && String(row.status_text).trim() !== '' ? (
+                          <button
+                            type="button"
+                            onClick={() => handlePowerSearchClick(row)}
+                            className="failed-idoc-power-search-link"
+                          >
+                            Click here
+                          </button>
+                        ) : (
+                          '—'
+                        )}
+                      </td>
                     </tr>
                   ))
                 )}
@@ -237,6 +366,18 @@ const FailedIdocMonitoring = () => {
           </div>
         )}
       </div>
+
+      {selectedRow && (
+        <SearchModal
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+          description={String(selectedRow.status_text ?? '')}
+          ticketId={selectedRow.idoc_number}
+          searchType="webSearch"
+          identifierLabel="IDOC Number"
+          directPowerSearch
+        />
+      )}
     </div>
   );
 };

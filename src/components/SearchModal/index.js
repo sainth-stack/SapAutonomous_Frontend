@@ -39,7 +39,15 @@ function getApiError(err, fallback) {
   return err?.message || fallback;
 }
 
-const SearchModal = ({ isOpen, onClose, description, ticketId, searchType }) => {
+const SearchModal = ({
+  isOpen,
+  onClose,
+  description,
+  ticketId,
+  searchType,
+  identifierLabel = 'Ticket ID',
+  directPowerSearch = false,
+}) => {
   const [results, setResults] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -74,18 +82,21 @@ const SearchModal = ({ isOpen, onClose, description, ticketId, searchType }) => 
 
   const fetchWebSearch = async (queryText) => {
     let query = queryText;
-    try {
-      const { data: probData } = await axios.post(
-        vectorizerProblemDescriptionURL,
-        { query: queryText },
-        { headers: JSON_HEADERS }
-      );
-      const summarized = probData?.description;
-      if (summarized != null && String(summarized).trim() !== '') {
-        query = String(summarized).trim();
+
+    if (!directPowerSearch) {
+      try {
+        const { data: probData } = await axios.post(
+          vectorizerProblemDescriptionURL,
+          { query: queryText },
+          { headers: JSON_HEADERS }
+        );
+        const summarized = probData?.description;
+        if (summarized != null && String(summarized).trim() !== '') {
+          query = String(summarized).trim();
+        }
+      } catch (e) {
+        console.warn('get-problem-description failed, using raw request text', e);
       }
-    } catch (e) {
-      console.warn('get-problem-description failed, using raw request text', e);
     }
 
     const { data } = await axios.post(
@@ -162,7 +173,7 @@ const SearchModal = ({ isOpen, onClose, description, ticketId, searchType }) => 
           ) : (
             <div className="results-section">
               <div className="results-content">
-                <p className="modal-ticket-id">Ticket ID: {ticketId}</p>
+                <p className="modal-ticket-id">{identifierLabel}: {ticketId}</p>
                 <ReactMarkdown
                   components={{
                     a: ({ node, ...props }) => (
