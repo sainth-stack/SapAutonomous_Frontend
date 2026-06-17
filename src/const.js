@@ -1,52 +1,60 @@
-// For local development, use: http://localhost:8000/api
-// export const baseURL = 'http://localhost:8000/api'
-export const baseURL = 'https://api.bainocular.seleccionconsulting.com/api'
-export const logApiURL = 'https://api.bainocular.seleccionconsulting.com/log';
+const PROD_API_HOST = 'https://api.bainocular.seleccionconsulting.com';
+const DEV_API_HOST = 'https://api-dev.bainocular.seleccionconsulting.com';
+
+/** Dev API when app runs on localhost or a hostname containing "dev". */
+function isDevEnvironment() {
+  if (typeof window === 'undefined') return false;
+  const host = window.location.hostname.toLowerCase();
+  return host.includes('dev') || host === 'localhost' || host === '127.0.0.1';
+}
+
+const apiHost = isDevEnvironment() ? DEV_API_HOST : PROD_API_HOST;
+
+export const baseURL = `${apiHost}/api`;
+export const logApiURL = `${apiHost}/log`;
 
 /** Default password assigned to new users — triggers mandatory reset on login */
 export const DEFAULT_USER_PASSWORD = 'Bainocular@123';
 
 /** Admin reset password endpoint */
 export const adminResetPasswordURL = `${baseURL}/admin/reset-password`;
-export const systemMonitoringHistoryURL = 'https://api.bainocular.seleccionconsulting.com/api/history';
+
+export const systemMonitoringHistoryURL = `${baseURL}/history`;
 
 /** File Upload endpoint */
-export const fileUploadURL = 'https://api.bainocular.seleccionconsulting.com/process_file_replace';
+export const fileUploadURL = `${apiHost}/process_file_replace`;
 
 /** Classification records endpoint */
-export const classificationRecordsURL = 'https://api.bainocular.seleccionconsulting.com/v1/classification/records';
+export const classificationRecordsURL = `${apiHost}/v1/classification/records`;
 
 /** Classification sentence endpoint – classify a single sentence */
-export const classificationSentenceURL = 'https://api.bainocular.seleccionconsulting.com/v1/classification/sentence';
+export const classificationSentenceURL = `${apiHost}/v1/classification/sentence`;
 
 /** Problem description endpoint – generates summary from raw request text */
-export const vectorizerProblemDescriptionURL =
-  'https://api.bainocular.seleccionconsulting.com/get-problem-description';
+export const vectorizerProblemDescriptionURL = `${apiHost}/get-problem-description`;
 
 /** Similar tickets / KEDB query */
-export const vectorizerSimilarTicketsURL =
-  'https://api.bainocular.seleccionconsulting.com/v3/lux/similar-tickets/query';
+export const vectorizerSimilarTicketsURL = `${apiHost}/v3/lux/similar-tickets/query`;
 
 /** Context search — KEDB image + text query */
-export const contextSearchQueryURL =
-  'https://api.bainocular.seleccionconsulting.com/context-search/query';
+export const contextSearchQueryURL = `${apiHost}/context-search/query`;
 
 /** Legacy power search endpoint */
-export const powerSearchURL = 'https://api.bainocular.seleccionconsulting.com/power-search';
+export const powerSearchURL = `${apiHost}/power-search`;
 
 /** AI Power Search (session-aware) — used by Web Suggested Actions */
-export const aiPowerSearchURL = 'https://api.bainocular.seleccionconsulting.com/ai-power-search';
+export const aiPowerSearchURL = `${apiHost}/ai-power-search`;
 
 /** AI Power Search image upload — used by Web Suggested Actions */
-export const aiPowerSearchImageURL = 'https://api.bainocular.seleccionconsulting.com/chat-image';
+export const aiPowerSearchImageURL = `${apiHost}/chat-image`;
 
 /** Background Job Monitoring – base URL; job list feed at `backgroundJobMonitorFeedURL` */
-export const backgroundJobMonitorBaseURL = 'https://api.bainocular.seleccionconsulting.com';
+export const backgroundJobMonitorBaseURL = apiHost;
 
-export const backgroundJobMonitorFeedURL = `${backgroundJobMonitorBaseURL}/background-jobs`;
+export const backgroundJobMonitorFeedURL = `${apiHost}/background-jobs`;
 
 /** Failed IDOC Monitoring feed */
-export const failedIdocMonitorFeedURL = `${backgroundJobMonitorBaseURL}/failed-idocs`;
+export const failedIdocMonitorFeedURL = `${apiHost}/failed-idocs`;
 
 /** Job & Application configuration CRUD (same host as `baseURL`) */
 export const configurationJobsURL = `${baseURL}/configuration/jobs`;

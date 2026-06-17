@@ -1,4 +1,4 @@
-import { logApiURL } from '../const';
+import { logApiURL } from './const';
 
 /**
  * Maps app routes to human-readable module names and source file identifiers for the log API.

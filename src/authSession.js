@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { baseURL } from '../const';
+import { baseURL } from './const';
 import { getStoredUser } from './authSession';
 
 // Generate a cache key based on file information
