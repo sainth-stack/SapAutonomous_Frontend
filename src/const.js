@@ -14,7 +14,7 @@ export const baseURL = `${apiHost}/api`;
 export const logApiURL = `${apiHost}/log`;
 
 /** Default password assigned to new users — triggers mandatory reset on login */
-export const DEFAULT_USER_PASSWORD = 'Bainocular@123';
+export const DEFAULT_USER_PASSWORD = 'ConsultantSCC@123';
 
 /** Admin reset password endpoint */
 export const adminResetPasswordURL = `${baseURL}/admin/reset-password`;
