@@ -10,6 +10,7 @@ import {
 } from '../../const';
 import { parseIntervalToMs } from '../../utils/parseIntervalTime';
 import SearchModal from '../../components/SearchModal';
+import RetriggerIdocModal from '../../components/RetriggerIdocModal';
 import FailedIdocFilters from './FailedIdocFilters';
 import FailedIdocPagination from './FailedIdocPagination';
 import '../batch-monitor/index.css';
@@ -86,6 +87,8 @@ const FailedIdocMonitoring = () => {
   const [nextRefresh, setNextRefresh] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState(null);
+  const [isRetriggerModalOpen, setIsRetriggerModalOpen] = useState(false);
+  const [selectedRetriggerIdoc, setSelectedRetriggerIdoc] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
 
   const pollIntervalMs = useMemo(
@@ -241,7 +244,17 @@ const FailedIdocMonitoring = () => {
     setSelectedRow(null);
   };
 
-  const totalColumns = DISPLAY_COLUMNS.length + 1;
+  const handleRetriggerClick = (row) => {
+    setSelectedRetriggerIdoc(row.idoc_number);
+    setIsRetriggerModalOpen(true);
+  };
+
+  const handleCloseRetriggerModal = () => {
+    setIsRetriggerModalOpen(false);
+    setSelectedRetriggerIdoc(null);
+  };
+
+  const totalColumns = DISPLAY_COLUMNS.length + 2;
 
   return (
     <div className="batch-monitor-page failed-idoc-page">
@@ -323,6 +336,7 @@ const FailedIdocMonitoring = () => {
                     <th key={col.key}>{col.label}</th>
                   ))}
                   <th>Power Search</th>
+                  <th>Retrigger IDOC</th>
                 </tr>
               </thead>
               <tbody>
@@ -358,6 +372,19 @@ const FailedIdocMonitoring = () => {
                           '—'
                         )}
                       </td>
+                      <td>
+                        {row.idoc_number != null && String(row.idoc_number).trim() !== '' ? (
+                          <button
+                            type="button"
+                            onClick={() => handleRetriggerClick(row)}
+                            className="failed-idoc-power-search-link"
+                          >
+                            Click here
+                          </button>
+                        ) : (
+                          '—'
+                        )}
+                      </td>
                     </tr>
                   ))
                 )}
@@ -376,6 +403,14 @@ const FailedIdocMonitoring = () => {
           searchType="webSearch"
           identifierLabel="IDOC Number"
           directPowerSearch
+        />
+      )}
+
+      {selectedRetriggerIdoc && (
+        <RetriggerIdocModal
+          isOpen={isRetriggerModalOpen}
+          onClose={handleCloseRetriggerModal}
+          idocno={selectedRetriggerIdoc}
         />
       )}
     </div>

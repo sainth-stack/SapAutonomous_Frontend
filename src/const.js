@@ -56,6 +56,9 @@ export const backgroundJobMonitorFeedURL = `${apiHost}/background-jobs`;
 /** Failed IDOC Monitoring feed */
 export const failedIdocMonitorFeedURL = `${apiHost}/failed-idocs`;
 
+/** Retrigger failed IDOC */
+export const retriggerIdocsURL = `${apiHost}/retrigger-idocs`;
+
 /** Job & Application configuration CRUD (same host as `baseURL`) */
 export const configurationJobsURL = `${baseURL}/configuration/jobs`;
 export const configurationApplicationsURL = `${baseURL}/configuration/applications`;
