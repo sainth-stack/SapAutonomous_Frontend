@@ -6,6 +6,7 @@ import { aiPowerSearchURL, aiPowerSearchImageURL } from '../../const';
 import { MAX_IMAGE_SIZE_MB, prepareImageAttachment } from '../../utils/imageUpload';
 import '../../components/ChatBot/styles.css';
 import './index.css';
+import { getStoredUser } from '../../utils/authSession';
 
 const INITIAL_MESSAGE =
   "Hello! I'm your AI Power Search assistant. Describe your SAP issue and I'll search for suggested actions and fixes.";
@@ -49,6 +50,7 @@ const WebSuggestedActions = () => {
     if (pendingImage) {
       const { file, previewUrl, name } = pendingImage;
       const userMsg = { type: 'user', imageUrl: previewUrl, imageName: name };
+      const user = getStoredUser();
       if (trimmed) userMsg.text = trimmed;
 
       setPendingImage(null);
@@ -60,6 +62,7 @@ const WebSuggestedActions = () => {
       try {
         const formData = new FormData();
         formData.append('image', file);
+        formData.append('email', user?.email);
         if (sessionId) {
           formData.append('session_id', sessionId);
         }
@@ -90,11 +93,13 @@ const WebSuggestedActions = () => {
     setIsLoading(true);
 
     try {
+      const user = getStoredUser();
       const { data } = await axios.post(
         aiPowerSearchURL,
         {
           session_id: sessionId || '',
           query: trimmed,
+          email: user?.email
         },
         { headers: { 'Content-Type': 'application/json' } }
       );

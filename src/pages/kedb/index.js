@@ -7,6 +7,7 @@ import { sendAppLog, getLogMetaFromPath } from '../../utils/logger';
 import { MAX_IMAGE_SIZE_MB, prepareImageAttachment } from '../../utils/imageUpload';
 import '../../components/ChatBot/styles.css';
 import './index.css';
+import { getStoredUser } from '../../utils/authSession';
 
 const INITIAL_MESSAGE =
   "Hello! I'm your Knowledge Base assistant. Ask me about any errors, incidents, or issues you need help with. I can search through historical data to find similar cases and solutions.";
@@ -70,6 +71,7 @@ const KEDB = () => {
     if (pendingImage) {
       const { file, previewUrl, name } = pendingImage;
       const userMsg = { type: 'user', imageUrl: previewUrl, imageName: name };
+      const user = getStoredUser();
       if (trimmed) userMsg.text = trimmed;
 
       setPendingImage(null);
@@ -81,6 +83,7 @@ const KEDB = () => {
       try {
         const formData = new FormData();
         formData.append('image', file);
+        formData.append('email', user?.email);
         if (sessionId) {
           formData.append('session_id', sessionId);
         }
@@ -114,9 +117,10 @@ const KEDB = () => {
     setIsLoading(true);
 
     try {
+      const user = getStoredUser();
       const formData = new FormData();
       formData.append('query', trimmed);
-
+      formData.append('email', user?.email);
       const { data } = await axios.post(contextSearchQueryURL, formData);
 
       logApiStatus(true, 'query');
