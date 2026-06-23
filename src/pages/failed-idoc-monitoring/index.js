@@ -6,6 +6,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import axios from 'axios';
 import {
   failedIdocMonitorFeedURL,
+  configurationFailedIdocsURL,
   configurationGlobalIntervalsURL,
 } from '../../const';
 import { parseIntervalToMs } from '../../utils/parseIntervalTime';
@@ -72,8 +73,22 @@ const parseFeedResponse = (payload) => {
 
 const getRowField = (row, field) => String(row[field] ?? '').trim();
 
-const DEFAULT_POLL_MS = 5 * 60 * 1000;
+const DEFAULT_POLL_MS = 3 * 60 * 1000;
 const ITEMS_PER_PAGE = 10;
+
+/** True when a feed row matches a configured Failed IDOC entry (non-empty config fields must match). */
+const rowMatchesFailedIdocConfig = (row, config) => {
+  const pairs = [
+    ['message_type', config.message_type],
+    ['sender', config.sender],
+    ['receiver', config.receiver],
+  ];
+  return pairs.every(([field, expected]) => {
+    const exp = String(expected ?? '').trim();
+    if (!exp) return true;
+    return getRowField(row, field) === exp;
+  });
+};
 
 const FailedIdocMonitoring = () => {
   const [data, setData] = useState([]);
@@ -82,7 +97,9 @@ const FailedIdocMonitoring = () => {
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
   const [filters, setFilters] = useState(INITIAL_FILTERS);
-  const [jobIntervalText, setJobIntervalText] = useState('');
+  const [failedIdocIntervalText, setFailedIdocIntervalText] = useState('3');
+  const [configuredFailedIdocs, setConfiguredFailedIdocs] = useState([]);
+  const [configLoaded, setConfigLoaded] = useState(false);
   const [lastRefreshed, setLastRefreshed] = useState(null);
   const [nextRefresh, setNextRefresh] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -92,19 +109,28 @@ const FailedIdocMonitoring = () => {
   const [currentPage, setCurrentPage] = useState(1);
 
   const pollIntervalMs = useMemo(
-    () => parseIntervalToMs(jobIntervalText, DEFAULT_POLL_MS),
-    [jobIntervalText]
+    () => parseIntervalToMs(failedIdocIntervalText, DEFAULT_POLL_MS),
+    [failedIdocIntervalText]
   );
 
   const loadGlobalConfiguration = useCallback(async () => {
     try {
-      const globalRes = await fetch(configurationGlobalIntervalsURL);
+      const [globalRes, configRes] = await Promise.all([
+        fetch(configurationGlobalIntervalsURL),
+        fetch(configurationFailedIdocsURL),
+      ]);
       if (globalRes.ok) {
         const g = await globalRes.json();
-        setJobIntervalText(g.job_interval_time ?? '');
+        setFailedIdocIntervalText(g.failed_idoc_interval_time ?? '3');
+      }
+      if (configRes.ok) {
+        const rows = await configRes.json();
+        setConfiguredFailedIdocs(Array.isArray(rows) ? rows : []);
       }
     } catch {
       /* keep defaults */
+    } finally {
+      setConfigLoaded(true);
     }
   }, []);
 
@@ -180,7 +206,14 @@ const FailedIdocMonitoring = () => {
       toMs = d.getTime();
     }
 
-    return data.filter((row) => {
+    let rows = data;
+    if (configLoaded && configuredFailedIdocs.length > 0) {
+      rows = rows.filter((row) =>
+        configuredFailedIdocs.some((cfg) => rowMatchesFailedIdocConfig(row, cfg))
+      );
+    }
+
+    return rows.filter((row) => {
       const creationMs = parseDateValueToMs(row.creation_date);
       if (creationMs == null) {
         if (fromMs || toMs) return false;
@@ -213,7 +246,7 @@ const FailedIdocMonitoring = () => {
 
       return true;
     });
-  }, [data, fromDate, toDate, filters]);
+  }, [data, fromDate, toDate, filters, configLoaded, configuredFailedIdocs]);
 
   const { paginatedData, totalPages } = useMemo(() => {
     const total = filteredData.length;

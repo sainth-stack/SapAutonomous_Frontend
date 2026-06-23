@@ -16,6 +16,7 @@ import customParseFormat from "dayjs/plugin/customParseFormat";
 import {
   configurationJobsURL,
   configurationApplicationsURL,
+  configurationFailedIdocsURL,
   configurationGlobalIntervalsURL,
   sendEmailNotificationURL,
 } from "../../../const";
@@ -65,14 +66,23 @@ const JobConfiguration = () => {
   const [appSubmitting, setAppSubmitting] = useState(false);
   const [jobIntervalCommon, setJobIntervalCommon] = useState("");
   const [appIntervalCommon, setAppIntervalCommon] = useState("");
+  const [failedIdocIntervalCommon, setFailedIdocIntervalCommon] = useState("3");
   const [globalIntervalsLoading, setGlobalIntervalsLoading] = useState(true);
   const [savingJobInterval, setSavingJobInterval] = useState(false);
   const [savingAppInterval, setSavingAppInterval] = useState(false);
+  const [savingFailedIdocInterval, setSavingFailedIdocInterval] = useState(false);
+  const [failedIdocs, setFailedIdocs] = useState([]);
+  const [failedIdocLoading, setFailedIdocLoading] = useState(true);
+  const [failedIdocError, setFailedIdocError] = useState(null);
+  const [failedIdocModalOpen, setFailedIdocModalOpen] = useState(false);
+  const [failedIdocEditingId, setFailedIdocEditingId] = useState(null);
+  const [failedIdocSubmitting, setFailedIdocSubmitting] = useState(false);
   const [emailRecipient, setEmailRecipient] = useState("");
   const [sendingEmail, setSendingEmail] = useState(false);
 
   const [jobForm] = Form.useForm();
   const [applicationForm] = Form.useForm();
+  const [failedIdocForm] = Form.useForm();
 
   const applicationStatusOptions = useMemo(() => {
     const map = new Map(APP_STATUS_OPTIONS.map((o) => [o.value, { ...o }]));
@@ -129,6 +139,31 @@ const JobConfiguration = () => {
       }
     },
     [appEditingId, applications, applicationForm]
+  );
+
+  const syncFailedIdocFormWhenModalOpens = useCallback(
+    (open) => {
+      if (!open) return;
+      if (failedIdocEditingId == null) {
+        failedIdocForm.setFieldsValue({
+          messageType: "",
+          sender: "",
+          receiver: "",
+          details: "",
+        });
+      } else {
+        const row = failedIdocs.find((f) => f.id === failedIdocEditingId);
+        if (row) {
+          failedIdocForm.setFieldsValue({
+            messageType: row.message_type ?? "",
+            sender: row.sender ?? "",
+            receiver: row.receiver ?? "",
+            details: row.details ?? "",
+          });
+        }
+      }
+    },
+    [failedIdocEditingId, failedIdocs, failedIdocForm]
   );
 
   const openCreateJob = () => {
@@ -311,6 +346,95 @@ const JobConfiguration = () => {
     }
   };
 
+  const fetchFailedIdocConfig = useCallback(async () => {
+    try {
+      setFailedIdocLoading(true);
+      setFailedIdocError(null);
+      const res = await fetch(configurationFailedIdocsURL);
+      if (!res.ok) throw new Error("Failed to load Failed IDOC configuration");
+      const data = await res.json();
+      const rows = Array.isArray(data) ? data : [];
+      setFailedIdocs(
+        rows.map((row) => ({
+          id: row.id,
+          message_type: row.message_type ?? "",
+          sender: row.sender ?? "",
+          receiver: row.receiver ?? "",
+          details: row.details ?? "",
+        }))
+      );
+    } catch (err) {
+      setFailedIdocError(err.message || "Failed to load Failed IDOC configuration");
+      setFailedIdocs([]);
+    } finally {
+      setFailedIdocLoading(false);
+    }
+  }, []);
+
+  const openCreateFailedIdoc = () => {
+    setFailedIdocEditingId(null);
+    setFailedIdocModalOpen(true);
+  };
+
+  const openEditFailedIdoc = (row) => {
+    setFailedIdocEditingId(row.id);
+    setFailedIdocModalOpen(true);
+  };
+
+  const onFailedIdocSubmit = async (values) => {
+    setFailedIdocSubmitting(true);
+    try {
+      const body = JSON.stringify({
+        message_type: values.messageType.trim(),
+        sender: (values.sender || "").trim(),
+        receiver: (values.receiver || "").trim(),
+        details: (values.details || "").trim(),
+      });
+      const url =
+        failedIdocEditingId != null
+          ? `${configurationFailedIdocsURL}/${failedIdocEditingId}`
+          : configurationFailedIdocsURL;
+      const method = failedIdocEditingId != null ? "PUT" : "POST";
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body,
+      });
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.detail || res.statusText || "Request failed");
+      }
+      message.success(
+        failedIdocEditingId != null
+          ? "Failed IDOC configuration updated."
+          : "Failed IDOC configuration created."
+      );
+      setFailedIdocModalOpen(false);
+      failedIdocForm.resetFields();
+      await fetchFailedIdocConfig();
+    } catch (e) {
+      message.error(e.message || "Could not save Failed IDOC configuration");
+    } finally {
+      setFailedIdocSubmitting(false);
+    }
+  };
+
+  const removeFailedIdoc = async (id) => {
+    try {
+      const res = await fetch(`${configurationFailedIdocsURL}/${id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok && res.status !== 204) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.detail || "Delete failed");
+      }
+      message.success("Failed IDOC configuration deleted.");
+      await fetchFailedIdocConfig();
+    } catch (e) {
+      message.error(e.message || "Could not delete Failed IDOC configuration");
+    }
+  };
+
   const fetchGlobalIntervals = useCallback(async () => {
     try {
       setGlobalIntervalsLoading(true);
@@ -319,21 +443,24 @@ const JobConfiguration = () => {
       const data = await res.json();
       setJobIntervalCommon(data.job_interval_time ?? "");
       setAppIntervalCommon(data.application_interval_time ?? "");
+      setFailedIdocIntervalCommon(data.failed_idoc_interval_time ?? "3");
     } catch {
       setJobIntervalCommon("");
       setAppIntervalCommon("");
+      setFailedIdocIntervalCommon("3");
     } finally {
       setGlobalIntervalsLoading(false);
     }
   }, []);
 
-  const persistGlobalIntervals = async (nextJob, nextApp) => {
+  const persistGlobalIntervals = async (nextJob, nextApp, nextFailedIdoc) => {
     const res = await fetch(configurationGlobalIntervalsURL, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         job_interval_time: (nextJob ?? "").trim(),
         application_interval_time: (nextApp ?? "").trim(),
+        failed_idoc_interval_time: (nextFailedIdoc ?? "3").trim(),
       }),
     });
     if (!res.ok) {
@@ -343,12 +470,13 @@ const JobConfiguration = () => {
     const data = await res.json();
     setJobIntervalCommon(data.job_interval_time ?? "");
     setAppIntervalCommon(data.application_interval_time ?? "");
+    setFailedIdocIntervalCommon(data.failed_idoc_interval_time ?? "3");
   };
 
   const saveJobSectionInterval = async () => {
     setSavingJobInterval(true);
     try {
-      await persistGlobalIntervals(jobIntervalCommon, appIntervalCommon);
+      await persistGlobalIntervals(jobIntervalCommon, appIntervalCommon, failedIdocIntervalCommon);
       message.success("Interval time saved for job monitoring.");
     } catch (e) {
       message.error(e.message || "Could not save interval time");
@@ -360,12 +488,24 @@ const JobConfiguration = () => {
   const saveAppSectionInterval = async () => {
     setSavingAppInterval(true);
     try {
-      await persistGlobalIntervals(jobIntervalCommon, appIntervalCommon);
+      await persistGlobalIntervals(jobIntervalCommon, appIntervalCommon, failedIdocIntervalCommon);
       message.success("Interval time saved for application monitoring.");
     } catch (e) {
       message.error(e.message || "Could not save interval time");
     } finally {
       setSavingAppInterval(false);
+    }
+  };
+
+  const saveFailedIdocSectionInterval = async () => {
+    setSavingFailedIdocInterval(true);
+    try {
+      await persistGlobalIntervals(jobIntervalCommon, appIntervalCommon, failedIdocIntervalCommon);
+      message.success("Interval time saved for Failed IDOC monitoring.");
+    } catch (e) {
+      message.error(e.message || "Could not save interval time");
+    } finally {
+      setSavingFailedIdocInterval(false);
     }
   };
 
@@ -412,6 +552,10 @@ const JobConfiguration = () => {
   useEffect(() => {
     fetchApplicationConfig();
   }, [fetchApplicationConfig]);
+
+  useEffect(() => {
+    fetchFailedIdocConfig();
+  }, [fetchFailedIdocConfig]);
 
   useEffect(() => {
     fetchGlobalIntervals();
@@ -671,6 +815,113 @@ const JobConfiguration = () => {
           </div>
         </section>
 
+        <section className="job-config-app-section" aria-label="Failed IDOC configuration">
+          <div className="header-section">
+            <h2 className="page-title">Failed IDOC Configuration</h2>
+            <p className="page-subtitle">
+              Configure Failed IDOC monitoring: message type, sender, receiver, and notification details. Interval time below applies to all Failed IDOC entries in this section.
+            </p>
+          </div>
+
+          <div className="job-config-section-interval">
+            <label className="job-config-section-interval-label" htmlFor="failed-idoc-interval-common">
+              Interval time
+            </label>
+            <Input
+              id="failed-idoc-interval-common"
+              allowClear
+              placeholder="e.g. 3m — shared for all Failed IDOCs"
+              value={failedIdocIntervalCommon}
+              onChange={(e) => setFailedIdocIntervalCommon(e.target.value)}
+              disabled={globalIntervalsLoading}
+              className="job-config-section-interval-input"
+            />
+            <Button
+              type="primary"
+              loading={savingFailedIdocInterval}
+              disabled={globalIntervalsLoading}
+              onClick={saveFailedIdocSectionInterval}
+            >
+              Save
+            </Button>
+          </div>
+
+          <div className="admin-toolbar">
+            <button
+              type="button"
+              className="admin-btn primary"
+              onClick={openCreateFailedIdoc}
+            >
+              Add Failed IDOC
+            </button>
+          </div>
+
+          <div className="admin-table-wrap">
+            <table className="admin-table job-config-app-table">
+              <thead>
+                <tr>
+                  <th>Message Type</th>
+                  <th>Sender</th>
+                  <th>Receiver</th>
+                  <th>Details</th>
+                  <th className="admin-th-actions">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {failedIdocLoading ? (
+                  <tr>
+                    <td colSpan={5} className="admin-empty">
+                      Loading Failed IDOC configuration…
+                    </td>
+                  </tr>
+                ) : failedIdocError ? (
+                  <tr>
+                    <td colSpan={5} className="admin-empty">
+                      {failedIdocError}
+                    </td>
+                  </tr>
+                ) : failedIdocs.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="admin-empty">
+                      No Failed IDOCs configured. Add a Failed IDOC to get started.
+                    </td>
+                  </tr>
+                ) : (
+                  failedIdocs.map((row) => (
+                    <tr key={row.id}>
+                      <td className="admin-td-name">{row.message_type || "—"}</td>
+                      <td>{row.sender || "—"}</td>
+                      <td>{row.receiver || "—"}</td>
+                      <td>{row.details || "—"}</td>
+                      <td className="admin-td-actions">
+                        <button
+                          type="button"
+                          className="admin-btn link"
+                          onClick={() => openEditFailedIdoc(row)}
+                        >
+                          Edit
+                        </button>
+                        <Popconfirm
+                          title={`Delete “${row.message_type || "this Failed IDOC"}”?`}
+                          okText="Delete"
+                          cancelText="Cancel"
+                          okButtonProps={{ danger: true }}
+                          onConfirm={() => removeFailedIdoc(row.id)}
+                          placement="leftTop"
+                        >
+                          <button type="button" className="admin-btn link danger">
+                            Delete
+                          </button>
+                        </Popconfirm>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
         <Modal
           title={
             <div className="job-config-modal-title">
@@ -857,6 +1108,97 @@ const JobConfiguration = () => {
                 </Button>
                 <Button type="primary" htmlType="submit" loading={appSubmitting}>
                   {appEditingId != null ? "Save changes" : "Add application"}
+                </Button>
+              </Space>
+            </div>
+          </Form>
+        </Modal>
+
+        <Modal
+          title={
+            <div className="job-config-modal-title">
+              <span className="job-config-modal-heading">
+                {failedIdocEditingId != null ? "Edit Failed IDOC" : "Add Failed IDOC"}
+              </span>
+              <Text type="secondary" className="job-config-modal-subtitle">
+                Message type, sender/receiver partners, and contact or routing details for Failed IDOC alerts.
+              </Text>
+            </div>
+          }
+          open={failedIdocModalOpen}
+          onCancel={() => {
+            setFailedIdocModalOpen(false);
+            failedIdocForm.resetFields();
+          }}
+          afterOpenChange={syncFailedIdocFormWhenModalOpens}
+          destroyOnClose
+          width={560}
+          className="job-config-modal"
+          footer={null}
+          maskClosable={false}
+        >
+          <Form
+            form={failedIdocForm}
+            layout="vertical"
+            requiredMark="optional"
+            size="middle"
+            className="job-config-form"
+            onFinish={onFailedIdocSubmit}
+          >
+            <Form.Item
+              name="messageType"
+              label="Message type"
+              extra="IDOC message type to monitor (e.g. ORDERS, INVOIC)."
+              rules={[
+                { required: true, message: "Enter a message type" },
+                { whitespace: true, message: "Message type cannot be only spaces" },
+                { max: 256, message: "Use at most 256 characters" },
+              ]}
+            >
+              <Input allowClear placeholder="ORDERS" autoComplete="off" />
+            </Form.Item>
+            <Form.Item
+              name="sender"
+              label="Sender"
+              extra="Sender partner (optional — leave blank to match any sender)."
+              rules={[{ max: 256, message: "Use at most 256 characters" }]}
+            >
+              <Input allowClear placeholder="SAPCLNT100" autoComplete="off" />
+            </Form.Item>
+            <Form.Item
+              name="receiver"
+              label="Receiver"
+              extra="Receiver partner (optional — leave blank to match any receiver)."
+              rules={[{ max: 256, message: "Use at most 256 characters" }]}
+            >
+              <Input allowClear placeholder="PARTNER01" autoComplete="off" />
+            </Form.Item>
+            <Form.Item
+              name="details"
+              label="Details"
+              extra="Notification target, runbook link, or short description."
+              rules={[{ max: 500, message: "Use at most 500 characters" }]}
+            >
+              <Input.TextArea
+                rows={3}
+                allowClear
+                placeholder="e.g. on-call email or escalation note"
+                showCount
+                maxLength={500}
+              />
+            </Form.Item>
+            <div className="job-config-form-footer">
+              <Space>
+                <Button
+                  onClick={() => {
+                    setFailedIdocModalOpen(false);
+                    failedIdocForm.resetFields();
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button type="primary" htmlType="submit" loading={failedIdocSubmitting}>
+                  {failedIdocEditingId != null ? "Save changes" : "Add Failed IDOC"}
                 </Button>
               </Space>
             </div>

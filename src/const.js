@@ -62,6 +62,7 @@ export const retriggerIdocsURL = `${apiHost}/retrigger-idocs`;
 /** Job & Application configuration CRUD (same host as `baseURL`) */
 export const configurationJobsURL = `${baseURL}/configuration/jobs`;
 export const configurationApplicationsURL = `${baseURL}/configuration/applications`;
+export const configurationFailedIdocsURL = `${baseURL}/configuration/failed-idocs`;
 export const configurationGlobalIntervalsURL = `${baseURL}/configuration/global-intervals`;
 export const sendEmailNotificationURL = `${baseURL}/configuration/send-email`;
 
