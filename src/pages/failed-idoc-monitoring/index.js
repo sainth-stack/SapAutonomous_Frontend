@@ -131,7 +131,7 @@ const FailedIdocMonitoring = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState(null);
   const [isRetriggerModalOpen, setIsRetriggerModalOpen] = useState(false);
-  const [selectedRetriggerIdoc, setSelectedRetriggerIdoc] = useState(null);
+  const [selectedIdocIds, setSelectedIdocIds] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [sortConfig, setSortConfig] = useState({ key: 'creation_date', direction: 'desc' });
 
@@ -322,15 +322,27 @@ const FailedIdocMonitoring = () => {
     setSelectedRow(null);
   };
 
-  const handleRetriggerClick = (row) => {
-    setSelectedRetriggerIdoc(row.idoc_number);
+  const getRowIdocNumber = (row) => getRowField(row, 'idoc_number');
+
+  /** Single-select for now; payload uses ids array for future multi-select. */
+  const handleRowSelect = (idocNumber) => {
+    const id = String(idocNumber ?? '').trim();
+    if (!id) return;
+    setSelectedIdocIds((prev) => (prev.length === 1 && prev[0] === id ? [] : [id]));
+  };
+
+  const handleRetriggerSelected = () => {
+    if (selectedIdocIds.length === 0) return;
     setIsRetriggerModalOpen(true);
   };
 
   const handleCloseRetriggerModal = () => {
     setIsRetriggerModalOpen(false);
-    setSelectedRetriggerIdoc(null);
   };
+
+  useEffect(() => {
+    setSelectedIdocIds([]);
+  }, [currentPage, fromDate, toDate, filters]);
 
   const totalColumns = DISPLAY_COLUMNS.length + 2;
 
@@ -383,14 +395,31 @@ const FailedIdocMonitoring = () => {
         getUniqueValues={getUniqueValues}
       />
 
-      <FailedIdocPagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        totalItems={sortedData.length}
-        itemsPerPage={ITEMS_PER_PAGE}
-        onPageChange={setCurrentPage}
-        disabled={loading}
-      />
+      <div className="failed-idoc-table-toolbar">
+        <FailedIdocPagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={sortedData.length}
+          itemsPerPage={ITEMS_PER_PAGE}
+          onPageChange={setCurrentPage}
+          disabled={loading}
+        />
+        <div className="failed-idoc-toolbar-actions">
+          {selectedIdocIds.length > 0 && (
+            <span className="failed-idoc-selection-pill">
+              {selectedIdocIds.length} IDOC{selectedIdocIds.length === 1 ? '' : 's'} selected
+            </span>
+          )}
+          <button
+            type="button"
+            className="failed-idoc-retrigger-btn"
+            onClick={handleRetriggerSelected}
+            disabled={loading || selectedIdocIds.length === 0}
+          >
+            Retrigger IDOC
+          </button>
+        </div>
+      </div>
 
       <div className="chart-container table-container">
         {loading ? (
@@ -410,6 +439,14 @@ const FailedIdocMonitoring = () => {
             <table className="job-monitor-table">
               <thead>
                 <tr>
+                  <th className="failed-idoc-select-th" scope="col" aria-label="Select IDOC">
+                    <div className="failed-idoc-select-cell-inner">
+                      <span
+                        className="failed-idoc-checkbox-custom failed-idoc-checkbox-custom--header"
+                        aria-hidden="true"
+                      />
+                    </div>
+                  </th>
                   {DISPLAY_COLUMNS.map((col) => (
                     <th
                       key={col.key}
@@ -433,8 +470,7 @@ const FailedIdocMonitoring = () => {
                       </span>
                     </th>
                   ))}
-                  <th>Power Search</th>
-                  <th>Retrigger IDOC</th>
+                  <th className="failed-idoc-action-th">Power Search</th>
                 </tr>
               </thead>
               <tbody>
@@ -445,19 +481,57 @@ const FailedIdocMonitoring = () => {
                     </td>
                   </tr>
                 ) : (
-                  paginatedData.map((row, idx) => (
+                  paginatedData.map((row, idx) => {
+                    const idocNumber = getRowIdocNumber(row);
+                    const isSelected = idocNumber && selectedIdocIds.includes(idocNumber);
+                    const rowClass = [
+                      String(row.error_category ?? '').toLowerCase() === 'failed'
+                        ? 'row-failed'
+                        : '',
+                      isSelected ? 'failed-idoc-row-selected' : '',
+                    ]
+                      .filter(Boolean)
+                      .join(' ');
+
+                    return (
                     <tr
                       key={`${row.idoc_number ?? 'row'}-${idx}`}
-                      className={
-                        String(row.error_category ?? '').toLowerCase() === 'failed'
-                          ? 'row-failed'
-                          : ''
-                      }
+                      className={rowClass || undefined}
                     >
+                      <td className="failed-idoc-select-cell">
+                        {idocNumber ? (
+                          <div className="failed-idoc-select-cell-inner">
+                            <label className="failed-idoc-checkbox-label">
+                            <input
+                              type="checkbox"
+                              className="failed-idoc-row-checkbox"
+                              checked={isSelected}
+                              onChange={() => handleRowSelect(idocNumber)}
+                              aria-label={`Select IDOC ${idocNumber}`}
+                            />
+                            <span className="failed-idoc-checkbox-custom" aria-hidden="true">
+                              <svg viewBox="0 0 12 10" fill="none" className="failed-idoc-checkbox-icon">
+                                <path
+                                  d="M1 5.5L4.5 9L11 1"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                />
+                              </svg>
+                            </span>
+                          </label>
+                          </div>
+                        ) : (
+                          <div className="failed-idoc-select-cell-inner">
+                            <span className="failed-idoc-select-empty">—</span>
+                          </div>
+                        )}
+                      </td>
                       {DISPLAY_COLUMNS.map((col) => (
                         <td key={col.key}>{formatDisplayCell(row, col)}</td>
                       ))}
-                      <td>
+                      <td className="failed-idoc-action-cell">
                         {row.status_text != null && String(row.status_text).trim() !== '' ? (
                           <button
                             type="button"
@@ -470,21 +544,9 @@ const FailedIdocMonitoring = () => {
                           '—'
                         )}
                       </td>
-                      <td>
-                        {row.idoc_number != null && String(row.idoc_number).trim() !== '' ? (
-                          <button
-                            type="button"
-                            onClick={() => handleRetriggerClick(row)}
-                            className="failed-idoc-power-search-link"
-                          >
-                            Click here
-                          </button>
-                        ) : (
-                          '—'
-                        )}
-                      </td>
                     </tr>
-                  ))
+                    );
+                  })
                 )}
               </tbody>
             </table>
@@ -504,11 +566,11 @@ const FailedIdocMonitoring = () => {
         />
       )}
 
-      {selectedRetriggerIdoc && (
+      {isRetriggerModalOpen && selectedIdocIds.length > 0 && (
         <RetriggerIdocModal
           isOpen={isRetriggerModalOpen}
           onClose={handleCloseRetriggerModal}
-          idocno={selectedRetriggerIdoc}
+          idocIds={selectedIdocIds}
         />
       )}
     </div>

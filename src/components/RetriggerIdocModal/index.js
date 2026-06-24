@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import axios from 'axios';
 import { retriggerIdocsURL } from '../../const';
 import './index.css';
@@ -21,21 +21,28 @@ function getApiError(err) {
   return err?.message || 'Failed to retrigger IDOC. Please try again.';
 }
 
-const RetriggerIdocModal = ({ isOpen, onClose, idocno }) => {
+const RetriggerIdocModal = ({ isOpen, onClose, idocno, idocIds }) => {
   const [result, setResult] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const hasFetchedRef = useRef(false);
   const lastFetchKey = useRef('');
 
+  const resolvedIds = useMemo(() => {
+    if (Array.isArray(idocIds) && idocIds.length > 0) {
+      return idocIds.map((id) => String(id).trim()).filter(Boolean);
+    }
+    const single = String(idocno ?? '').trim();
+    return single ? [single] : [];
+  }, [idocno, idocIds]);
+
   const fetchRetrigger = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     setResult(null);
 
-    const idocNumber = String(idocno ?? '').trim();
-    if (!idocNumber) {
-      setError('No IDOC number available for this row.');
+    if (resolvedIds.length === 0) {
+      setError('No IDOC number selected.');
       setIsLoading(false);
       return;
     }
@@ -43,7 +50,7 @@ const RetriggerIdocModal = ({ isOpen, onClose, idocno }) => {
     try {
       const { data } = await axios.post(
         retriggerIdocsURL,
-        { idocno: idocNumber },
+        { ids: resolvedIds },
         { headers: JSON_HEADERS }
       );
       setResult(data?.result ?? data);
@@ -53,11 +60,11 @@ const RetriggerIdocModal = ({ isOpen, onClose, idocno }) => {
     } finally {
       setIsLoading(false);
     }
-  }, [idocno]);
+  }, [resolvedIds]);
 
   useEffect(() => {
-    if (isOpen && idocno) {
-      const fetchKey = String(idocno);
+    if (isOpen && resolvedIds.length > 0) {
+      const fetchKey = resolvedIds.join(',');
       if (fetchKey !== lastFetchKey.current || !hasFetchedRef.current) {
         lastFetchKey.current = fetchKey;
         hasFetchedRef.current = true;
@@ -69,11 +76,11 @@ const RetriggerIdocModal = ({ isOpen, onClose, idocno }) => {
       setResult(null);
       setError(null);
     }
-  }, [isOpen, idocno, fetchRetrigger]);
+  }, [isOpen, resolvedIds, fetchRetrigger]);
 
   if (!isOpen) return null;
 
-  const idocNumber = formatFieldValue(result?.IvDocnum ?? idocno);
+  const idocNumber = formatFieldValue(result?.IvDocnum ?? resolvedIds[0]);
   const message = formatFieldValue(result?.EvMessage);
   const status = formatFieldValue(result?.EvStatus);
 
