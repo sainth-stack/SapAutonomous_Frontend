@@ -73,6 +73,32 @@ const parseFeedResponse = (payload) => {
 
 const getRowField = (row, field) => String(row[field] ?? '').trim();
 
+const getSortValue = (row, key) => {
+  if (key === 'creation_date') {
+    return parseDateValueToMs(row.creation_date);
+  }
+  if (key === 'idoc_number') {
+    const raw = getRowField(row, key);
+    const num = Number(raw);
+    if (raw !== '' && !Number.isNaN(num)) return num;
+    return raw.toLowerCase();
+  }
+  return getRowField(row, key).toLowerCase();
+};
+
+const compareSortValues = (aVal, bVal, direction) => {
+  const dir = direction === 'asc' ? 1 : -1;
+  const aEmpty = aVal == null || aVal === '';
+  const bEmpty = bVal == null || bVal === '';
+  if (aEmpty && bEmpty) return 0;
+  if (aEmpty) return 1;
+  if (bEmpty) return -1;
+  if (typeof aVal === 'number' && typeof bVal === 'number') {
+    return (aVal - bVal) * dir;
+  }
+  return String(aVal).localeCompare(String(bVal), undefined, { numeric: true }) * dir;
+};
+
 const DEFAULT_POLL_MS = 3 * 60 * 1000;
 const ITEMS_PER_PAGE = 10;
 
@@ -107,6 +133,7 @@ const FailedIdocMonitoring = () => {
   const [isRetriggerModalOpen, setIsRetriggerModalOpen] = useState(false);
   const [selectedRetriggerIdoc, setSelectedRetriggerIdoc] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [sortConfig, setSortConfig] = useState({ key: 'creation_date', direction: 'desc' });
 
   const pollIntervalMs = useMemo(
     () => parseIntervalToMs(failedIdocIntervalText, DEFAULT_POLL_MS),
@@ -189,6 +216,16 @@ const FailedIdocMonitoring = () => {
     setCurrentPage(1);
   };
 
+  const handleSort = (key) => {
+    setSortConfig((prev) => {
+      if (prev.key === key) {
+        return { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' };
+      }
+      return { key, direction: 'asc' };
+    });
+    setCurrentPage(1);
+  };
+
   useEffect(() => {
     setCurrentPage(1);
   }, [fromDate, toDate]);
@@ -248,16 +285,24 @@ const FailedIdocMonitoring = () => {
     });
   }, [data, fromDate, toDate, filters, configLoaded, configuredFailedIdocs]);
 
+  const sortedData = useMemo(() => {
+    if (!sortConfig.key) return filteredData;
+    const { key, direction } = sortConfig;
+    return [...filteredData].sort((a, b) =>
+      compareSortValues(getSortValue(a, key), getSortValue(b, key), direction)
+    );
+  }, [filteredData, sortConfig]);
+
   const { paginatedData, totalPages } = useMemo(() => {
-    const total = filteredData.length;
+    const total = sortedData.length;
     const pages = Math.max(1, Math.ceil(total / ITEMS_PER_PAGE));
     const safePage = Math.min(currentPage, pages);
     const start = (safePage - 1) * ITEMS_PER_PAGE;
     return {
-      paginatedData: filteredData.slice(start, start + ITEMS_PER_PAGE),
+      paginatedData: sortedData.slice(start, start + ITEMS_PER_PAGE),
       totalPages: pages,
     };
-  }, [filteredData, currentPage]);
+  }, [sortedData, currentPage]);
 
   useEffect(() => {
     if (currentPage > totalPages) {
@@ -341,7 +386,7 @@ const FailedIdocMonitoring = () => {
       <FailedIdocPagination
         currentPage={currentPage}
         totalPages={totalPages}
-        totalItems={filteredData.length}
+        totalItems={sortedData.length}
         itemsPerPage={ITEMS_PER_PAGE}
         onPageChange={setCurrentPage}
         disabled={loading}
@@ -366,7 +411,27 @@ const FailedIdocMonitoring = () => {
               <thead>
                 <tr>
                   {DISPLAY_COLUMNS.map((col) => (
-                    <th key={col.key}>{col.label}</th>
+                    <th
+                      key={col.key}
+                      className="failed-idoc-sortable-th"
+                      onClick={() => !loading && handleSort(col.key)}
+                      aria-sort={
+                        sortConfig.key === col.key
+                          ? sortConfig.direction === 'asc'
+                            ? 'ascending'
+                            : 'descending'
+                          : 'none'
+                      }
+                    >
+                      <span className="failed-idoc-th-label">
+                        {col.label}
+                        {sortConfig.key === col.key && (
+                          <span className="failed-idoc-sort-indicator" aria-hidden="true">
+                            {sortConfig.direction === 'asc' ? ' ↑' : ' ↓'}
+                          </span>
+                        )}
+                      </span>
+                    </th>
                   ))}
                   <th>Power Search</th>
                   <th>Retrigger IDOC</th>

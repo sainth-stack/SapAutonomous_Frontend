@@ -206,6 +206,27 @@
   text-decoration: underline;
 }
 
+.failed-idoc-sortable-th {
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.failed-idoc-sortable-th:hover {
+  background: #f1f5f9;
+}
+
+.failed-idoc-th-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.failed-idoc-sort-indicator {
+  color: #667eea;
+  font-weight: 700;
+}
+
 @media (max-width: 768px) {
   .failed-idoc-filters-grid {
     grid-template-columns: 1fr;
