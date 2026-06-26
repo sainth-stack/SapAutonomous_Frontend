@@ -21,8 +21,8 @@ export const adminResetPasswordURL = `${baseURL}/admin/reset-password`;
 
 export const systemMonitoringHistoryURL = `${baseURL}/history`;
 
-/** File Upload endpoint */
-export const fileUploadURL = `${apiHost}/process_file_replace`;
+/** SLA ticket upload — maintains sla_tickets_data */
+export const maintainTicketsURL = `${apiHost}/maintain_tickets`;
 
 /** Classification records endpoint */
 export const classificationRecordsURL = `${apiHost}/v1/classification/records`;

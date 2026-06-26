@@ -1,17 +1,14 @@
 import React, { useState, useRef } from 'react';
 import './index.css';
-import { FaUpload, FaFileAlt, FaCheckCircle, FaSpinner } from "react-icons/fa";
+import { FaFileAlt, FaCheckCircle, FaSpinner } from "react-icons/fa";
 import { IoCloudUploadOutline } from "react-icons/io5";
-import { useNavigate } from 'react-router-dom';
-import { baseURL, fileUploadURL } from '../../const';
-// Removed: readFileAsData, processFileData (no longer needed)
+import { maintainTicketsURL } from '../../const';
 
 const DataSource = () => {
   const [file, setFile] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState('');
   const fileInputRef = useRef(null);
-  const navigate = useNavigate();
 
   const handleFileChange = async (e) => {
     const selectedFile = e.target.files[0];
@@ -27,40 +24,10 @@ const DataSource = () => {
     setUploadStatus('');
 
     try {
-      // Optionally gzip compress large CSV files to reduce upload time
-      const compressIfSupported = async (file) => {
-        try {
-          if (file.name.endsWith('.gz') || (file.type && file.type.includes('gzip'))) {
-            return file;
-          }
-          // Only attempt to compress likely text-based files
-          const isCsvLike = file.name.endsWith('.csv') || (file.type && file.type.includes('csv'));
-          if (!isCsvLike) return file;
-
-          // Heuristic: compress if file > 1MB
-          if (file.size < 1 * 1024 * 1024) return file;
-
-          if (typeof CompressionStream === 'function') {
-            const cs = new CompressionStream('gzip');
-            const compressedStream = file.stream().pipeThrough(cs);
-            const compressedBlob = await new Response(compressedStream).blob();
-            const gzName = file.name.endsWith('.csv') ? `${file.name}.gz` : `${file.name}.gz`;
-            return new File([compressedBlob], gzName, { type: 'application/gzip' });
-          }
-        } catch (e) {
-          console.warn('Compression failed or not supported, uploading original file. Error:', e);
-        }
-        return file;
-      };
-
-      const fileToSend = await compressIfSupported(selectedFile);
-
-      // Build multipart form and send file to backend (already processed file)
       const formData = new FormData();
-      formData.append('file', fileToSend);
-      formData.append('original_filename', selectedFile.name);
+      formData.append('file', selectedFile);
 
-      const response = await fetch(baseURL + '/upload_data', {
+      const response = await fetch(maintainTicketsURL, {
         method: 'POST',
         body: formData,
       });
@@ -69,59 +36,37 @@ const DataSource = () => {
         let errorMessage = `HTTP error! status: ${response.status}`;
         try {
           const errJson = await response.json();
-          errorMessage = errJson.detail || errorMessage;
+          errorMessage = errJson.error || errJson.detail || errJson.message || errorMessage;
         } catch (_) {}
         throw new Error(errorMessage);
       }
 
       const data = await response.json();
-
-      // Sync classification / KEDB table (sla_tickets_data) on the main API host
-      const classificationFormData = new FormData();
-      classificationFormData.append('file', selectedFile);
-
-      const classificationResponse = await fetch(fileUploadURL, {
-        method: 'POST',
-        body: classificationFormData,
-      });
-
-      if (!classificationResponse.ok) {
-        let classificationError = `Classification sync failed (${classificationResponse.status})`;
-        try {
-          const errJson = await classificationResponse.json();
-          classificationError = errJson.error || errJson.detail || errJson.message || classificationError;
-        } catch (_) {}
-        throw new Error(classificationError);
+      if (data.error) {
+        throw new Error(data.error);
       }
 
-      const classificationData = await classificationResponse.json();
-      if (classificationData.error) {
-        throw new Error(classificationData.error);
-      }
+      const recordCount = data.length ?? 0;
 
-      // Store upload information
       const fileInfo = {
         name: selectedFile.name,
         uploadDate: new Date().toISOString(),
         size: selectedFile.size,
         originalName: selectedFile.name,
-        batchId: data.batch_id || 'unknown',
-        rawRecords: data.raw_records || 0,
-        processedTickets: data.processed_tickets || 0,
+        batchId: selectedFile.name,
+        rawRecords: recordCount,
+        processedTickets: recordCount,
+        recordCount,
         processed: true,
       };
       localStorage.setItem('uploadedFile', JSON.stringify(fileInfo));
 
       console.log('Upload successful:', {
-        filename: data.filename,
-        batchId: data.batch_id,
-        rawRecords: data.raw_records,
-        processedTickets: data.processed_tickets,
-        classificationRecords: classificationData.length ?? classificationData.message,
+        message: data.message,
+        records: recordCount,
       });
 
       setUploadStatus('success');
-      
     } catch (error) {
       console.error('Error uploading file:', error);
       setUploadStatus('error');
