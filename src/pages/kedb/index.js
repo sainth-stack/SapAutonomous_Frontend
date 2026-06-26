@@ -82,6 +82,7 @@ const KEDB = () => {
 
       try {
         const formData = new FormData();
+       
         formData.append('image', file);
         formData.append('email', user?.email);
         if (sessionId) {

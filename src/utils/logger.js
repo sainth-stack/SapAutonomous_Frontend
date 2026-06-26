@@ -1,4 +1,5 @@
 import { logApiURL } from '../const';
+import { getStoredUser } from './authSession';
 
 /**
  * Maps app routes to human-readable module names and source file identifiers for the log API.
@@ -179,7 +180,7 @@ export const getLogMetaFromPath = (pathname = '') => {
 
 export const sendAppLog = async ({
   pathname = typeof window !== 'undefined' ? window.location.pathname : '/',
-  user = 'Admin',
+  user = getStoredUser()?.email ,
   logType = 'I',
   content = ''
 }) => {
