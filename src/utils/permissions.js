@@ -3,10 +3,15 @@
  * Users with a role must get paths only from that role — do not merge these in.
  * Admin-only routes (roles/users) are only in ALL_ADMIN_PATHS.
  */
-export const LIMITED_USER_ALLOWED_PATHS = ['/kedb', '/suggested-actions-depository', '/web-suggested-actions'];
+export const LIMITED_USER_ALLOWED_PATHS = [
+  '/process-monitor/thanksgiving',
+  '/process-monitor/failed-idocs',
+  '/self-service-actions',
+];
+// Note: /admin/logs is intentionally excluded — it is role-assignable (not super-admin-only).
 export const ALL_ADMIN_PATHS = ['/admin/roles', '/admin/users', '/admin/configuration'];
 
-export const DEFAULT_PATH_FOR_LIMITED_USER = '/kedb';
+export const DEFAULT_PATH_FOR_LIMITED_USER = '/process-monitor/thanksgiving';
 
 /**
  * Default route after login or when redirecting due to access denied.
@@ -16,7 +21,7 @@ export const DEFAULT_PATH_FOR_LIMITED_USER = '/kedb';
  * @returns {string}
  */
 export function getDefaultPathForUser(isSuperAdmin, allowedPaths = null) {
-  if (isSuperAdmin) return '/';
+  if (isSuperAdmin) return '/process-monitor/thanksgiving';
   if (Array.isArray(allowedPaths) && allowedPaths.length > 0 && allowedPaths[0]) {
     return allowedPaths[0];
   }

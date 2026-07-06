@@ -163,7 +163,7 @@
 }
 
 .admin-permissions-list {
-  max-height: 320px !important;
+  max-height: 52vh !important;
   overflow-y: auto !important;
   padding: 12px 20px 20px !important;
 }
@@ -188,8 +188,8 @@
 
 .admin-permissions-grid {
   display: grid !important;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)) !important;
-  gap: 10px 20px !important;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)) !important;
+  gap: 8px 16px !important;
   padding: 0 !important;
   max-height: none !important;
   overflow-y: visible !important;
@@ -222,9 +222,10 @@
   accent-color: #3b82f6 !important;
 }
 
-/* Wider modal for role form */
+/* Wider/taller modal for role form */
 .admin-page-container .admin-modal {
-  max-width: 640px !important;
+  max-width: 780px !important;
+  max-height: 92vh !important;
 }
 
 @media (max-width: 768px) {

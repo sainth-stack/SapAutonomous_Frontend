@@ -1,11 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import { baseURL } from '../../const';
-import s4Logo from '../../assets/s4.png';
-// import eccLogo from '../../assets/ecc.jpeg';
-// import s4CloudLogo from '../../assets/s4-cloud.jpg';
-// import sopLogo from '../../assets/sop-logo.png';
-import nlpLogo from '../../assets/nlp-logo.png';
 import './index.css';
 
 // Format SAP OData date values (/Date(ts)/ or ISO string)
@@ -23,19 +18,22 @@ const formatValue = (val) => {
     return String(val);
 };
 
-// Humanize column names (e.g. SalesOrder -> Sales Order)
-const humanizeColumn = (col) => col.replace(/([A-Z])/g, ' $1').replace(/^./, c => c.toUpperCase()).trim();
+const humanizeColumn = (col) =>
+    col.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase()).trim();
 
-// Columns to hide from table (internal/metadata)
 const HIDDEN_COLS = ['__metadata', 'url_used', 'intent_debug'];
 
-// Render SAP results - supports both single entity (d) and list (d.results)
 const SapTable = ({ data }) => {
     const d = data?.response?.d;
-    const results = Array.isArray(d?.results) ? d.results : (d && !d.results ? [d] : null);
-    if (!results || results.length === 0) return <p className="sap-empty">No records found.</p>;
+    const results = Array.isArray(d?.results)
+        ? d.results
+        : d && !d.results
+        ? [d]
+        : null;
+    if (!results || results.length === 0)
+        return <p className="sap-empty">No records found.</p>;
 
-    const rawColumns = Object.keys(results[0]).filter(c => !HIDDEN_COLS.includes(c));
+    const rawColumns = Object.keys(results[0]).filter((c) => !HIDDEN_COLS.includes(c));
     const columns = rawColumns.length ? rawColumns : Object.keys(results[0]);
 
     return (
@@ -43,7 +41,7 @@ const SapTable = ({ data }) => {
             <table className="sap-table">
                 <thead>
                     <tr>
-                        {columns.map(col => (
+                        {columns.map((col) => (
                             <th key={col}>{humanizeColumn(col)}</th>
                         ))}
                     </tr>
@@ -51,7 +49,7 @@ const SapTable = ({ data }) => {
                 <tbody>
                     {results.map((row, i) => (
                         <tr key={i}>
-                            {columns.map(col => (
+                            {columns.map((col) => (
                                 <td key={col}>{formatValue(row[col])}</td>
                             ))}
                         </tr>
@@ -62,61 +60,24 @@ const SapTable = ({ data }) => {
     );
 };
 
-// Simple table for Explore_sla table responses
-const ExploreTable = ({ rows }) => {
-    if (!rows?.length) return <p className="sap-empty">No records found.</p>;
-    const columns = Object.keys(rows[0]);
-    return (
-        <div className="sap-table-wrap">
-            <table className="sap-table">
-                <thead>
-                    <tr>{columns.map(col => <th key={col}>{humanizeColumn(col)}</th>)}</tr>
-                </thead>
-                <tbody>
-                    {rows.map((row, i) => (
-                        <tr key={i}>
-                            {columns.map(col => <td key={col}>{formatValue(row[col])}</td>)}
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
-        </div>
-    );
-};
-
-// NLP Analysis – SLA breach bot (Explore_sla API)
-const NlpChatBot = ({ onClose }) => {
+const SapJoule = () => {
     const [message, setMessage] = useState('');
     const [messages, setMessages] = useState([
         {
             type: 'bot',
-            text: 'Hello! I am your SLA NLP assistant. Ask about tickets, work in progress, breaches, resources, and resolution times.',
+            text: 'Hello! I am your SAP Joule assistant. Query Sales Orders, Purchase Orders and more in natural language.',
         },
     ]);
     const [isLoading, setIsLoading] = useState(false);
-    const [sessionId, setSessionId] = useState(null);
-    const [backendDataset, setBackendDataset] = useState(null);
     const messagesEndRef = useRef(null);
     const inputRef = useRef(null);
 
-    useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
-    useEffect(() => { inputRef.current?.focus(); }, []);
+    useEffect(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [messages]);
 
     useEffect(() => {
-        const fetchDataset = async () => {
-            try {
-                const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
-                const res = await axios.post(`${baseURL}/sla_breach/chat_dataset`, {
-                    filename: 'db',
-                    email: userInfo?.email,
-                    name: userInfo?.name,
-                });
-                if (res.data?.dataset) setBackendDataset(res.data.dataset);
-            } catch (err) {
-                console.error('Failed to fetch SLA chat dataset:', err);
-            }
-        };
-        fetchDataset();
+        inputRef.current?.focus();
     }, []);
 
     const sendMessage = async (e) => {
@@ -124,228 +85,111 @@ const NlpChatBot = ({ onClose }) => {
         const trimmed = message.trim();
         if (!trimmed || isLoading) return;
 
-        setMessages(prev => [...prev, { type: 'user', text: trimmed }]);
-        setMessage('');
-        setIsLoading(true);
-
-        try {
-            const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
-            const jsonBody = { query: trimmed };
-            if (sessionId) jsonBody.session_id = sessionId;
-            if (userInfo?.email) jsonBody.email = userInfo.email;
-            if (userInfo?.name) jsonBody.name = userInfo.name;
-            if (backendDataset?.length) jsonBody.dataset = backendDataset;
-
-            const res = await axios.post(`${baseURL}/Explore_sla/`, jsonBody, {
-                headers: { 'Content-Type': 'application/json' },
-            });
-            const data = res?.data;
-            if (data?.session_id) setSessionId(data.session_id);
-            setMessages(prev => [...prev, { type: 'bot', exploreData: data }]);
-        } catch (err) {
-            const detail = err?.response?.data?.detail ?? err?.response?.data?.message ?? err.message ?? 'Something went wrong.';
-            setMessages(prev => [...prev, { type: 'bot', text: `Error: ${detail}`, isError: true }]);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    return (
-        <div className="bot-modal">
-            <div className="bot-header">
-                <div className="bot-header-left">
-                    <img src={nlpLogo} alt="NLP Analysis" className="bot-logo" />
-                    <div>
-                        <div className="bot-title">SLA NLP Analysis</div>
-                        <div className="bot-subtitle">Ask SLA breach data in natural language</div>
-                    </div>
-                </div>
-                <button className="bot-close" onClick={onClose}>✕</button>
-            </div>
-
-            <div className="bot-messages">
-                {messages.map((msg, idx) => (
-                    <div key={idx} className={`bot-msg ${msg.type} ${msg.isError ? 'error' : ''}`}>
-                        {msg.exploreData ? (
-                            <div className="sap-response">
-                                {msg.exploreData.explanation && (
-                                    <div className="sap-friendly-answer">{msg.exploreData.explanation}</div>
-                                )}
-                                {msg.exploreData.type === 'table' && Array.isArray(msg.exploreData.payload) ? (
-                                    <ExploreTable rows={msg.exploreData.payload} />
-                                ) : (
-                                    <div className="sap-friendly-answer">
-                                        {String(msg.exploreData.payload ?? msg.exploreData.detail ?? 'No response.')}
-                                    </div>
-                                )}
-                            </div>
-                        ) : (
-                            <span>{msg.text}</span>
-                        )}
-                    </div>
-                ))}
-                {isLoading && (
-                    <div className="bot-msg bot">
-                        <span className="bot-loading">Thinking…</span>
-                    </div>
-                )}
-                <div ref={messagesEndRef} />
-            </div>
-
-            <form className="bot-input-bar" onSubmit={sendMessage}>
-                <input
-                    ref={inputRef}
-                    className="bot-input"
-                    value={message}
-                    onChange={e => setMessage(e.target.value)}
-                    placeholder="e.g. How many work in progress tickets are there?"
-                    disabled={isLoading}
-                />
-                <button type="submit" className="bot-send" disabled={isLoading || !message.trim()}>Send</button>
-            </form>
-        </div>
-    );
-};
-
-// Chat bot for SAP queries
-const SapChatBot = ({ onClose }) => {
-    const [message, setMessage] = useState('');
-    const [messages, setMessages] = useState([
-        { type: 'bot', text: 'Hello! I am your S/4HANA Assistant. How can I help you today?' }
-    ]);
-    const [isLoading, setIsLoading] = useState(false);
-    const messagesEndRef = useRef(null);
-    const inputRef = useRef(null);
-
-    useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
-    useEffect(() => { inputRef.current?.focus(); }, []);
-
-    const sendMessage = async (e) => {
-        e?.preventDefault();
-        const trimmed = message.trim();
-        if (!trimmed || isLoading) return;
-
-        setMessages(prev => [...prev, { type: 'user', text: trimmed }]);
+        setMessages((prev) => [...prev, { type: 'user', text: trimmed }]);
         setMessage('');
         setIsLoading(true);
 
         try {
             const res = await axios.post(`${baseURL}/sap/query`, { query: trimmed });
-            setMessages(prev => [...prev, { type: 'bot', sapData: res.data }]);
+            setMessages((prev) => [...prev, { type: 'bot', sapData: res.data }]);
         } catch (err) {
-            const detail = err?.response?.data?.detail || err.message || 'Something went wrong.';
-            setMessages(prev => [...prev, { type: 'bot', text: `Error: ${detail}`, isError: true }]);
+            const detail =
+                err?.response?.data?.detail || err.message || 'Something went wrong.';
+            setMessages((prev) => [
+                ...prev,
+                { type: 'bot', text: `Error: ${detail}`, isError: true },
+            ]);
         } finally {
             setIsLoading(false);
         }
     };
 
-    return (
-        <div className="bot-modal">
-            {/* Header */}
-            <div className="bot-header">
-                <div className="bot-header-left">
-                    <img src={s4Logo} alt="S/4HANA" className="bot-logo" />
-                    <div>
-                        <div className="bot-title">S/4HANA Assistant</div>
-                        <div className="bot-subtitle">Query SAP data in natural language</div>
-                    </div>
-                </div>
-                <button className="bot-close" onClick={onClose}>✕</button>
-            </div>
-
-            {/* Messages */}
-            <div className="bot-messages">
-                {messages.map((msg, idx) => (
-                    <div key={idx} className={`bot-msg ${msg.type} ${msg.isError ? 'error' : ''}`}>
-                        {msg.sapData ? (
-                            <div className="sap-response">
-                                {msg.sapData.friendlyAnswer && (
-                                    <div
-                                        className="sap-friendly-answer"
-                                        dangerouslySetInnerHTML={{ __html: msg.sapData.friendlyAnswer }}
-                                    />
-                                )}
-                                {msg.sapData.showTable && msg.sapData.response?.d?.results?.length > 0 ? (
-                                    <SapTable data={msg.sapData} />
-                                ) : !msg.sapData.friendlyAnswer ? (
-                                    <p className="sap-empty">No records found.</p>
-                                ) : null}
-                            </div>
-                        ) : (
-                            <span>{msg.text}</span>
-                        )}
-                    </div>
-                ))}
-                {isLoading && (
-                    <div className="bot-msg bot">
-                        <span className="bot-loading">Thinking…</span>
-                    </div>
-                )}
-                <div ref={messagesEndRef} />
-            </div>
-
-            {/* Input */}
-            <form className="bot-input-bar" onSubmit={sendMessage}>
-                <input
-                    ref={inputRef}
-                    className="bot-input"
-                    value={message}
-                    onChange={e => setMessage(e.target.value)}
-                    placeholder="e.g. Show me sales order 4"
-                    disabled={isLoading}
-                />
-                <button type="submit" className="bot-send" disabled={isLoading || !message.trim()}>Send</button>
-            </form>
-        </div>
-    );
-};
-
-// Main page
-const SelfServiceActions = () => {
-    const [openBotId, setOpenBotId] = useState(null);
-
-    const cards = [
-        { id: 's4', title: 'S/4HANA', desc: 'Query Sales Orders, Purchase Orders and more.', logo: s4Logo, available: true, badge: 'Live' },
-        // { id: 'btp', title: 'SAP ECC', desc: 'Self Service for SAP ECC system.', logo: eccLogo, available: false, badge: 'Soon' },
-        // { id: 'batch', title: 'SAP S/4 Cloud', desc: 'Self Service for SAP S/4 Cloud system.', logo: s4CloudLogo, available: false, badge: 'Soon' },
-        // { id: 'sop-know-errors', title: 'SOP - Know Errors', desc: 'Standard operating procedures and known errors.', logo: sopLogo, available: false, badge: 'Coming Soon' },
-        { id: 'nlp-analysis', title: 'NLP Analysis', desc: 'Ask SLA breach data in natural language.', logo: nlpLogo, available: true, badge: 'Live' },
-    ];
+    const handleKeyDown = (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage(e);
+        }
+    };
 
     return (
-        <div className="ssa-page">
-            <h1 className="ssa-title">Self Service Actions</h1>
-            <p className="ssa-subtitle">Select a system to query your enterprise data</p>
+        <div className="joule-page">
+            <div className="joule-header">
+                <h1 className="joule-title">SAP Joule</h1>
+                <p className="joule-subtitle">Query SAP S/4HANA data in natural language</p>
+            </div>
 
-            <div className="ssa-cards">
-                {cards.map(card => (
-                    <div
-                        key={card.id}
-                        className={`ssa-card ${card.available ? 'active' : 'inactive'}`}
-                        onClick={() => card.available && setOpenBotId(card.id)}
-                    >
-                        <span className={`ssa-card-badge ${card.available ? 'live' : 'soon'}`}>{card.badge || 'Soon'}</span>
-                        <div className="ssa-card-logo">
-                            {card.logo
-                                ? <img src={card.logo} alt={card.title} />
-                                : <span className="ssa-placeholder">?</span>}
+            <div className="joule-chat-area">
+                <div className="joule-messages">
+                    {messages.map((msg, idx) => (
+                        <div
+                            key={idx}
+                            className={`joule-msg ${msg.type}${msg.isError ? ' error' : ''}`}
+                        >
+                            {msg.sapData ? (
+                                <div className="sap-response">
+                                    {msg.sapData.friendlyAnswer && (
+                                        <div
+                                            className="sap-friendly-answer"
+                                            dangerouslySetInnerHTML={{
+                                                __html: msg.sapData.friendlyAnswer,
+                                            }}
+                                        />
+                                    )}
+                                    {msg.sapData.showTable &&
+                                    msg.sapData.response?.d?.results?.length > 0 ? (
+                                        <SapTable data={msg.sapData} />
+                                    ) : !msg.sapData.friendlyAnswer ? (
+                                        <p className="sap-empty">No records found.</p>
+                                    ) : null}
+                                </div>
+                            ) : (
+                                <span>{msg.text}</span>
+                            )}
                         </div>
-                        <div className="ssa-card-name">{card.title}</div>
-                        <div className="ssa-card-desc">{card.desc}</div>
-                        {card.available && <div className="ssa-card-action">Self Service →</div>}
-                    </div>
-                ))}
-            </div>
-
-            {openBotId && (
-                <div className="ssa-overlay" onClick={e => e.target === e.currentTarget && setOpenBotId(null)}>
-                    {openBotId === 's4' && <SapChatBot onClose={() => setOpenBotId(null)} />}
-                    {openBotId === 'nlp-analysis' && <NlpChatBot onClose={() => setOpenBotId(null)} />}
+                    ))}
+                    {isLoading && (
+                        <div className="joule-msg bot">
+                            <span className="joule-loading">Thinking…</span>
+                        </div>
+                    )}
+                    <div ref={messagesEndRef} />
                 </div>
-            )}
+
+                <form className="joule-input-bar" onSubmit={sendMessage}>
+                    <input
+                        ref={inputRef}
+                        className="joule-input"
+                        value={message}
+                        onChange={(e) => setMessage(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        placeholder="e.g. Show me sales order 4"
+                        disabled={isLoading}
+                        autoComplete="off"
+                    />
+                    <button
+                        type="submit"
+                        className="joule-send"
+                        disabled={isLoading || !message.trim()}
+                        aria-label="Send message"
+                    >
+                        <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            width="18"
+                            height="18"
+                        >
+                            <line x1="22" y1="2" x2="11" y2="13" />
+                            <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                        </svg>
+                    </button>
+                </form>
+            </div>
         </div>
     );
 };
 
-export default SelfServiceActions;
+export default SapJoule;

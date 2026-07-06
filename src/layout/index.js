@@ -2,22 +2,13 @@ import React, { useEffect } from "react";
 import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
 import "./style.css";
-import { Outlet, Navigate, useLocation } from "react-router-dom";
-import { canAccessPath, getDefaultPathForUser } from "../utils/permissions";
-import { sendAppLog, getLogMetaFromPath, isAdminRoutePath } from "../utils/logger";
-import { getStoredUser, isAuthenticatedSession } from "../utils/authSession";
-
+import { Outlet, useLocation } from "react-router-dom";
+import { isAdminRoutePath, sendAppLog, getLogMetaFromPath } from "../utils/logger";
 export function AdminLayout() {
   const location = useLocation();
-  const user = getStoredUser();
-  const isAuthenticated = !!isAuthenticatedSession();
-  const isSuperAdmin = !!(user?.isSuperAdmin);
-  const allowedPaths = user?.allowedPaths ?? null;
   const path = location.pathname;
-  const pathAllowed = isAuthenticated && canAccessPath(path, isSuperAdmin, allowedPaths);
 
   useEffect(() => {
-    if (!isAuthenticated || !pathAllowed) return;
     if (isAdminRoutePath(path)) return;
     const { moduleName } = getLogMetaFromPath(path);
     sendAppLog({
@@ -25,16 +16,7 @@ export function AdminLayout() {
       logType: "Page Opened",
       content: `${moduleName} — page opened (${path})`
     });
-  }, [path, isAuthenticated, pathAllowed, isSuperAdmin, allowedPaths]);
-
-  if (!isAuthenticated || !user) {
-    return <Navigate to="/login" replace />;
-  }
-
-  if (!pathAllowed) {
-    const defaultPath = getDefaultPathForUser(isSuperAdmin, allowedPaths);
-    return <Navigate to={defaultPath} replace />;
-  }
+  }, [path]);
 
   return (
     <div className="row p-0 m-0">

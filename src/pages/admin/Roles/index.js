@@ -3,6 +3,42 @@ import { baseURL } from "../../../const";
 import { message } from "antd";
 import "./index.css";
 
+// Human-readable labels for every page path — source of truth in the frontend.
+// Avoids depending on the backend /admin/pages API for the checkboxes display.
+const PAGE_LABELS = {
+  "/data-source": "Data Source",
+  "/sla-resolution-response-time": "SLA Resolution and Response Time",
+  "/self-monitoring": "Self Monitoring",
+  "/incidents-percent": "Incidents % and trend",
+  "/incidents-recurring": "Recurring incidents and trend",
+  "/incident-management": "Incident Classification",
+  "/incidents-auto-assignment": "Incidents Auto Assignment",
+  "/process-monitor/thanksgiving/configuration": "Configuration",
+  "/process-monitor/thanksgiving": "Background Job Monitoring",
+  "/system-monitoring": "System/Application Monitoring",
+  "/system-monitoring/sap-system": "System Monitoring SAP",
+  "/process-monitor/failed-idocs": "Failed IDOC Monitoring",
+  "/resource-queue-length": "Resource Queue Length",
+  "/resource-incidents-resolved": "Resource Incidents Resolved",
+  "/resource-time-per-resolution": "Resource Time per Resolution",
+  "/kedb": "AI Context Lookup",
+  "/suggested-actions-depository": "Suggested Actions - Depository",
+  "/web-suggested-actions": "AI Power Search",
+  "/preventive-measures": "Preventive Measures",
+  "/self-service-actions": "Self Service Actions",
+  "/automation-target-areas": "Potential Automation",
+  "/automation-preventive-alerts": "Proactive Alerts",
+  "/continuous-improvements/self-diagnosis": "Self Diagnosis",
+  "/continuous-improvements/improvise-mttr": "Improvise MTTR",
+  "/effectiveness-occurrence": "Effectiveness Occurrence",
+  "/effectiveness-resolution-time": "Effectiveness Resolution Time",
+  "/bi-report": "BI Report",
+  "/admin/users": "Admin - Users",
+  "/admin/roles": "Admin - Roles",
+  "/admin/configuration": "Admin - Configuration",
+  "/admin/logs": "Admin - Logs",
+};
+
 // Sidebar section order and paths (must match Sidebar)
 const PERMISSION_SECTIONS = [
   { title: "Data Source", paths: ["/data-source"] },
@@ -23,8 +59,11 @@ const PERMISSION_SECTIONS = [
   },
   { title: "Effectiveness of Measures", paths: ["/effectiveness-occurrence", "/effectiveness-resolution-time"] },
   { title: "BI Report", paths: ["/bi-report"] },
-  { title: "Admin", paths: ["/admin/users", "/admin/roles", "/admin/configuration"] },
+  { title: "Admin", paths: ["/admin/users", "/admin/roles", "/admin/configuration", "/admin/logs"] },
 ];
+
+// Flat list of all assignable paths (used for Select All)
+const ALL_SECTION_PATHS = PERMISSION_SECTIONS.flatMap((s) => s.paths);
 
 const AdminRoles = () => {
   const [roles, setRoles] = useState([]);
@@ -67,7 +106,7 @@ const AdminRoles = () => {
   useEffect(() => {
     (async () => {
       setLoading(true);
-      await Promise.all([fetchRoles(), fetchPages()]);
+      await fetchRoles();
       setLoading(false);
     })();
   }, []);
@@ -98,8 +137,7 @@ const AdminRoles = () => {
     }));
   };
 
-  const allPaths = pages.map((p) => p.path);
-  const allSelected = allPaths.length > 0 && form.permissions.length === allPaths.length;
+  const allSelected = ALL_SECTION_PATHS.length > 0 && form.permissions.length === ALL_SECTION_PATHS.length;
   const someSelected = form.permissions.length > 0;
 
   useEffect(() => {
@@ -111,18 +149,17 @@ const AdminRoles = () => {
   const toggleSelectAll = () => {
     setForm((prev) => ({
       ...prev,
-      permissions: allSelected ? [] : allPaths,
+      permissions: allSelected ? [] : ALL_SECTION_PATHS,
     }));
   };
 
-  // Group pages by sidebar section, preserving order
+  // Build sections entirely from static data — no backend dependency for checkboxes
   const pagesBySection = useMemo(() => {
-    const pathToPage = Object.fromEntries((pages || []).map((p) => [p.path, p]));
     return PERMISSION_SECTIONS.map(({ title, paths }) => ({
       title,
-      pages: paths.map((path) => pathToPage[path]).filter(Boolean),
-    })).filter((s) => s.pages.length > 0);
-  }, [pages]);
+      pages: paths.map((path) => ({ path, label: PAGE_LABELS[path] || path })),
+    }));
+  }, []);
 
   const saveRole = async () => {
     if (!form.name.trim()) {
