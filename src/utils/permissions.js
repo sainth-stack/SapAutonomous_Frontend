@@ -15,13 +15,13 @@ export const DEFAULT_PATH_FOR_LIMITED_USER = '/process-monitor/thanksgiving';
 
 /**
  * Default route after login or when redirecting due to access denied.
- * Super admin → "/", limited user → first allowed path or /kedb.
+ * Super admin → "/" (Home), limited user → first allowed path or /kedb.
  * @param {boolean} isSuperAdmin
  * @param {string[]|null} allowedPaths
  * @returns {string}
  */
 export function getDefaultPathForUser(isSuperAdmin, allowedPaths = null) {
-  if (isSuperAdmin) return '/process-monitor/thanksgiving';
+  if (isSuperAdmin) return '/';
   if (Array.isArray(allowedPaths) && allowedPaths.length > 0 && allowedPaths[0]) {
     return allowedPaths[0];
   }

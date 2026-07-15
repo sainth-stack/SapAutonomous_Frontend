@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { MdVisibility, MdVisibilityOff } from "react-icons/md";
 import { isAuthenticatedSession, setAuthSession, getStoredUser } from "../../utils/authSession";
 import { getDefaultPathForUser } from "../../utils/permissions";
@@ -14,8 +14,6 @@ export function Login() {
   const [error, setError] = useState("");
 
   const navigate = useNavigate();
-  const location = useLocation();
-  const from = location.state?.from || "/process-monitor/thanksgiving";
 
   // If already logged in, redirect
   useEffect(() => {
