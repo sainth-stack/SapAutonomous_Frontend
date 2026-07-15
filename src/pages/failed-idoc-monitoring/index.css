@@ -407,6 +407,53 @@
   white-space: nowrap;
 }
 
+/* ===== Dark theme overrides (light mode untouched) ===== */
+[data-theme="dark"] .failed-idoc-page .filter-date-input,
+[data-theme="dark"] .failed-idoc-filter-input,
+[data-theme="dark"] .failed-idoc-reset-btn,
+[data-theme="dark"] .failed-idoc-pagination-btn {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--text);
+}
+[data-theme="dark"] .failed-idoc-filters,
+[data-theme="dark"] .failed-idoc-pagination {
+  background: var(--surface-2);
+  border-color: var(--border);
+}
+[data-theme="dark"] .failed-idoc-filter-label,
+[data-theme="dark"] .failed-idoc-pagination-info {
+  color: var(--text-muted);
+}
+[data-theme="dark"] .failed-idoc-reset-btn:hover:not(:disabled),
+[data-theme="dark"] .failed-idoc-pagination-btn:hover:not(:disabled),
+[data-theme="dark"] .failed-idoc-sortable-th:hover {
+  background: var(--surface-hover);
+  border-color: var(--border-strong);
+}
+[data-theme="dark"] .job-monitor-table .row-failed {
+  background: rgba(220, 38, 38, 0.14);
+}
+[data-theme="dark"] .job-monitor-table .row-failed:hover {
+  background: rgba(220, 38, 38, 0.24);
+}
+[data-theme="dark"] .job-monitor-table .failed-idoc-row-selected {
+  background: rgba(102, 126, 234, 0.18) !important;
+}
+[data-theme="dark"] .failed-idoc-select-th,
+[data-theme="dark"] .failed-idoc-select-cell,
+[data-theme="dark"] .failed-idoc-page .job-monitor-table thead .failed-idoc-select-th {
+  background: var(--surface-2);
+  border-right-color: var(--border);
+}
+[data-theme="dark"] .failed-idoc-checkbox-custom {
+  border-color: var(--border-strong);
+  background: var(--surface);
+}
+[data-theme="dark"] .failed-idoc-checkbox-custom--header {
+  background: var(--surface);
+}
+
 @media (max-width: 768px) {
   .failed-idoc-filters-grid {
     grid-template-columns: 1fr;

@@ -16,6 +16,9 @@ import FailedIdocFilters from './FailedIdocFilters';
 import FailedIdocPagination from './FailedIdocPagination';
 import '../batch-monitor/index.css';
 import './index.css';
+import { getStoredUser } from '../../utils/authSession';
+import { addAppLog } from '../../utils/logger';
+
 
 const INITIAL_FILTERS = {
   status: [],
@@ -324,11 +327,34 @@ const FailedIdocMonitoring = () => {
 
   const getRowIdocNumber = (row) => getRowField(row, 'idoc_number');
 
-  /** Single-select for now; payload uses ids array for future multi-select. */
   const handleRowSelect = (idocNumber) => {
     const id = String(idocNumber ?? '').trim();
     if (!id) return;
-    setSelectedIdocIds((prev) => (prev.length === 1 && prev[0] === id ? [] : [id]));
+    setSelectedIdocIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+
+  const pageIdocNumbers = useMemo(
+    () => paginatedData.map(getRowIdocNumber).filter(Boolean),
+    [paginatedData]
+  );
+
+  const allPageSelected =
+    pageIdocNumbers.length > 0 && pageIdocNumbers.every((id) => selectedIdocIds.includes(id));
+  const somePageSelected =
+    !allPageSelected && pageIdocNumbers.some((id) => selectedIdocIds.includes(id));
+
+  const handleSelectAll = () => {
+    if (allPageSelected) {
+      setSelectedIdocIds((prev) => prev.filter((id) => !pageIdocNumbers.includes(id)));
+    } else {
+      setSelectedIdocIds((prev) => {
+        const next = [...prev];
+        pageIdocNumbers.forEach((id) => { if (!next.includes(id)) next.push(id); });
+        return next;
+      });
+    }
   };
 
   const handleRetriggerSelected = () => {
@@ -439,12 +465,24 @@ const FailedIdocMonitoring = () => {
             <table className="job-monitor-table">
               <thead>
                 <tr>
-                  <th className="failed-idoc-select-th" scope="col" aria-label="Select IDOC">
+                  <th className="failed-idoc-select-th" scope="col">
                     <div className="failed-idoc-select-cell-inner">
-                      <span
-                        className="failed-idoc-checkbox-custom failed-idoc-checkbox-custom--header"
-                        aria-hidden="true"
-                      />
+                      <label className="failed-idoc-checkbox-label">
+                        <input
+                          type="checkbox"
+                          className="failed-idoc-row-checkbox"
+                          checked={allPageSelected}
+                          ref={(el) => { if (el) el.indeterminate = somePageSelected; }}
+                          onChange={handleSelectAll}
+                          disabled={loading || pageIdocNumbers.length === 0}
+                          aria-label="Select all IDOCs on this page"
+                        />
+                        <span className="failed-idoc-checkbox-custom failed-idoc-checkbox-custom--header" aria-hidden="true">
+                          <svg viewBox="0 0 12 10" fill="none" className="failed-idoc-checkbox-icon">
+                            <path d="M1 5.5L4.5 9L11 1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        </span>
+                      </label>
                     </div>
                   </th>
                   {DISPLAY_COLUMNS.map((col) => (

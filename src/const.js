@@ -1,6 +1,6 @@
 /** Backend_Vijay_FastAPI — update these URLs once the new service is deployed */
-const PROD_API_HOST = 'http://18.143.150.140:4001';
-const DEV_API_HOST = 'http://localhost:4001';
+const PROD_API_HOST = 'http://localhost:8000';
+const DEV_API_HOST = 'http://localhost:8000';
 
 /** Dev API when app runs on localhost or a hostname containing "dev". */
 function isDevEnvironment() {

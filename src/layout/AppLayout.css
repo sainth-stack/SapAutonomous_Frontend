@@ -40,3 +40,36 @@
   flex: 1;
   overflow: hidden;
 }
+
+.app-layout-topbar-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.app-layout-user {
+  font-size: 0.875rem;
+  color: #475569;
+  font-weight: 500;
+}
+
+.app-layout-logout {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #dc2626;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.app-layout-logout:hover {
+  background: #fee2e2;
+  border-color: #f87171;
+}

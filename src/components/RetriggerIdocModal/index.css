@@ -221,6 +221,30 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.retrigger-bulk-entry {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.retrigger-bulk-entry:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.retrigger-bulk-entry-header {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #4f46e5;
 }
 
 .retrigger-detail-card {
@@ -338,4 +362,53 @@
     padding-left: 16px;
     padding-right: 16px;
   }
+}
+
+/* ===== Dark theme overrides (light mode untouched) ===== */
+[data-theme="dark"] .retrigger-modal {
+  background: var(--surface);
+  border-color: var(--border);
+}
+[data-theme="dark"] .retrigger-modal-header {
+  border-bottom-color: var(--border);
+  background: var(--surface-2);
+}
+[data-theme="dark"] .retrigger-modal-title,
+[data-theme="dark"] .retrigger-modal-loading-title,
+[data-theme="dark"] .retrigger-detail-value {
+  color: var(--text-strong);
+}
+[data-theme="dark"] .retrigger-modal-subtitle,
+[data-theme="dark"] .retrigger-modal-close,
+[data-theme="dark"] .retrigger-modal-loading-text,
+[data-theme="dark"] .retrigger-detail-label {
+  color: var(--text-muted);
+}
+[data-theme="dark"] .retrigger-modal-close:hover {
+  background: var(--surface-3);
+  color: var(--text);
+}
+[data-theme="dark"] .retrigger-detail-card {
+  background: var(--surface-2);
+  border-color: var(--border);
+}
+[data-theme="dark"] .retrigger-detail-card--highlight {
+  background: var(--surface);
+  border-color: var(--border-strong);
+}
+[data-theme="dark"] .retrigger-bulk-entry {
+  border-bottom-color: var(--border);
+}
+[data-theme="dark"] .retrigger-modal-footer {
+  border-top-color: var(--border);
+  background: var(--surface-2);
+}
+[data-theme="dark"] .retrigger-btn--secondary {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--text);
+}
+[data-theme="dark"] .retrigger-btn--secondary:hover {
+  background: var(--surface-2);
+  border-color: var(--border-strong);
 }

@@ -1,3 +1,15 @@
+/* ── Error message ── */
+.login-error-msg {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13.5px;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
 /* Login page – centered layout */
 .login-container-centered {
   min-height: 100vh;

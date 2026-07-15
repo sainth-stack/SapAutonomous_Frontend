@@ -36,7 +36,7 @@ const Home = () => {
   return (
     <div className="home-page">
       <div className="home-header">
-        <h1 className="home-title">BAInocular</h1>
+        <h1 className="home-title">SAP Autonomous</h1>
         <p className="home-subtitle">Select a module to get started</p>
       </div>
 
