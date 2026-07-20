@@ -16,10 +16,6 @@ import FailedIdocFilters from './FailedIdocFilters';
 import FailedIdocPagination from './FailedIdocPagination';
 import '../batch-monitor/index.css';
 import './index.css';
-import { getStoredUser } from '../../utils/authSession';
-import { addAppLog } from '../../utils/logger';
-
-
 const INITIAL_FILTERS = {
   status: [],
   messageType: [],
@@ -598,9 +594,7 @@ const FailedIdocMonitoring = () => {
           onClose={handleCloseModal}
           description={String(selectedRow.status_text ?? '')}
           ticketId={selectedRow.idoc_number}
-          searchType="webSearch"
           identifierLabel="IDOC Number"
-          directPowerSearch
         />
       )}
 

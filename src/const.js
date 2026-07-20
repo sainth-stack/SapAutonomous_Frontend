@@ -1,6 +1,6 @@
-/** Backend_Vijay_FastAPI — update these URLs once the new service is deployed */
-const PROD_API_HOST = 'http://localhost:8000';
-const DEV_API_HOST = 'http://localhost:8000';
+/** SapAutonomous API hosts */
+const PROD_API_HOST = 'http://18.143.150.140:4001';
+const DEV_API_HOST = 'http://18.143.150.140:4001';
 
 /** Dev API when app runs on localhost or a hostname containing "dev". */
 function isDevEnvironment() {
@@ -14,75 +14,21 @@ const apiHost = isDevEnvironment() ? DEV_API_HOST : PROD_API_HOST;
 export const baseURL = `${apiHost}/api`;
 export const logApiURL = `${apiHost}/log`;
 
-/** Default password assigned to new users — triggers mandatory reset on login */
-export const DEFAULT_USER_PASSWORD = 'ConsultantSCC@123';
-
-/** Admin reset password endpoint */
-export const adminResetPasswordURL = `${baseURL}/admin/reset-password`;
-
-export const systemMonitoringHistoryURL = `${baseURL}/history`;
-
-/** SLA ticket upload — maintains sla_tickets_data */
-export const maintainTicketsURL = `${apiHost}/maintain_tickets`;
-
-/** Classification records endpoint */
-export const classificationRecordsURL = `${apiHost}/v1/classification/records`;
-
-/** Classification sentence endpoint – classify a single sentence */
-export const classificationSentenceURL = `${apiHost}/v1/classification/sentence`;
-
-/** Problem description endpoint – generates summary from raw request text */
-export const vectorizerProblemDescriptionURL = `${apiHost}/get-problem-description`;
-
-/** Similar tickets / KEDB query */
-export const vectorizerSimilarTicketsURL = `${apiHost}/v3/lux/similar-tickets/query`;
-
-/** Context search — KEDB image + text query */
-export const contextSearchQueryURL = `${apiHost}/context-search/query`;
-
-/** Legacy power search endpoint */
-export const powerSearchURL = `${apiHost}/power-search`;
-
-/** AI Power Search (session-aware) — used by Web Suggested Actions */
-export const aiPowerSearchURL = `${apiHost}/ai-power-search`;
-
-/** AI Power Search image upload — used by Web Suggested Actions */
-export const aiPowerSearchImageURL = `${apiHost}/chat-image`;
-
-/** Background Job Monitoring – base URL; job list feed at `backgroundJobMonitorFeedURL` */
-export const backgroundJobMonitorBaseURL = apiHost;
-
+/** Background Job Monitoring */
 export const backgroundJobMonitorFeedURL = `${apiHost}/background-jobs`;
 
-/** Failed IDOC Monitoring feed */
+/** Failed IDOC Monitoring */
 export const failedIdocMonitorFeedURL = `${apiHost}/failed-idocs`;
-
-/** Retrigger failed IDOC */
 export const retriggerIdocsURL = `${apiHost}/retrigger-idocs`;
-
-/** Retrigger multiple failed IDOCs in bulk */
 export const retriggerBulkIdocsURL = `${apiHost}/retrigger-bulk-idocs`;
 
-/** Job & Application configuration CRUD (same host as `baseURL`) */
+/** Job & Failed IDOC configuration (used by monitoring pages) */
 export const configurationJobsURL = `${baseURL}/configuration/jobs`;
-export const configurationApplicationsURL = `${baseURL}/configuration/applications`;
 export const configurationFailedIdocsURL = `${baseURL}/configuration/failed-idocs`;
 export const configurationGlobalIntervalsURL = `${baseURL}/configuration/global-intervals`;
-export const sendEmailNotificationURL = `${baseURL}/configuration/send-email`;
 
-/** System configuration (database credentials, URLs, etc.) */
-export const configurationsURL = `${baseURL}/configurations`;
-export const configurationsSaveURL = `${baseURL}/configurations/save`;
+/** AI Power Search (Failed IDocs SearchModal) */
+export const aiPowerSearchURL = `${apiHost}/ai-power-search`;
 
 /** User activity logs — supports from_date / to_date query params (YYYY-MM-DD) */
 export const userActivityURL = `${apiHost}/download_user_activity`;
-
-/** Luxottica Helpdesk — incident detail (Manage Queue ticket link) */
-export const luxotticaHelpdeskLoginUrl =
-  'https://helpdesk.luxottica.com/HDAPortal/Authentication/Login?ReturnUrl=%2fHDAPortal%2f';
-
-export function getLuxotticaTicketUrl(requestId) {
-  const id = String(requestId ?? '').trim();
-  if (!id) return null;
-  return `${luxotticaHelpdeskLoginUrl}#/WSCView/Detail/${id}$entity=Incident`;
-}
