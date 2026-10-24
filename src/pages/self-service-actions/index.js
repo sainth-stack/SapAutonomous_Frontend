@@ -65,7 +65,7 @@ const SapJoule = () => {
     const [messages, setMessages] = useState([
         {
             type: 'bot',
-            text: 'Hello! I am your SAP Joule assistant. Query Sales Orders, Purchase Orders and more in natural language.',
+            text: 'Hello! I am your SAP Joule assistant. Ask about Sales Orders or Purchase Orders in natural language (e.g. list all purchase orders as a table, or show sales order 4).',
         },
     ]);
     const [isLoading, setIsLoading] = useState(false);
@@ -162,7 +162,7 @@ const SapJoule = () => {
                         value={message}
                         onChange={(e) => setMessage(e.target.value)}
                         onKeyDown={handleKeyDown}
-                        placeholder="e.g. Show me sales order 4"
+                        placeholder="e.g. List all sales orders as a table"
                         disabled={isLoading}
                         autoComplete="off"
                     />

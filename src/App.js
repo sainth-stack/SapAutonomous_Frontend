@@ -5,6 +5,7 @@ import Home from "./pages/home";
 import BatchMonitor from "./pages/batch-monitor";
 import FailedIdocMonitoring from "./pages/failed-idoc-monitoring";
 import SapJoule from "./pages/self-service-actions";
+import SimilarityTickets from "./pages/similarity-tickets";
 import AdminLogs from "./pages/admin/Logs";
 import { Login } from "./pages/Login";
 import { isAuthenticatedSession } from "./utils/authSession";
@@ -38,6 +39,7 @@ function App() {
             <Route path="/process-monitor/thanksgiving" element={<BatchMonitor />} />
             <Route path="/process-monitor/failed-idocs" element={<FailedIdocMonitoring />} />
             <Route path="/self-service-actions" element={<SapJoule />} />
+            <Route path="/similarity-tickets" element={<SimilarityTickets />} />
             <Route path="/admin/logs" element={<AdminLogs />} />
           </Route>
 

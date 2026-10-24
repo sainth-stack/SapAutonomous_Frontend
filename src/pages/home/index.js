@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MdSpeed, MdSmartToy, MdErrorOutline, MdArrowForward } from 'react-icons/md';
+import { MdSpeed, MdSmartToy, MdErrorOutline, MdManageSearch, MdArrowForward } from 'react-icons/md';
 import './index.css';
 
 const CARDS = [
@@ -27,6 +27,14 @@ const CARDS = [
     Icon: MdErrorOutline,
     path: '/process-monitor/failed-idocs',
     color: '#ef4444',
+  },
+  {
+    id: 'similarity-tickets',
+    title: 'Similarity Tickets',
+    desc: 'Describe an issue and find similar historical tickets, causes and fixes.',
+    Icon: MdManageSearch,
+    path: '/similarity-tickets',
+    color: '#0ea5e9',
   },
 ];
 
