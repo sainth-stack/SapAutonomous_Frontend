@@ -65,7 +65,7 @@ const SapJoule = () => {
     const [messages, setMessages] = useState([
         {
             type: 'bot',
-            text: 'Hello! I am your SAP Joule assistant. Ask about Sales Orders or Purchase Orders in natural language (e.g. list all purchase orders as a table, or show sales order 4).',
+            text: 'Hello! I am your SAP AI Assistant. Ask about Sales Orders in natural language (e.g. list all sales orders as a table, or show sales order 4).',
         },
     ]);
     const [isLoading, setIsLoading] = useState(false);
@@ -114,8 +114,8 @@ const SapJoule = () => {
     return (
         <div className="joule-page">
             <div className="joule-header">
-                <h1 className="joule-title">SAP Joule</h1>
-                <p className="joule-subtitle">Query SAP S/4HANA data in natural language</p>
+                <h1 className="joule-title">SAP AI Assistant</h1>
+                <p className="joule-subtitle">Query Sales Orders in SAP S/4HANA using natural language</p>
             </div>
 
             <div className="joule-chat-area">

@@ -22,7 +22,7 @@ const PATH_LOG_CONFIG = {
     programName: 'failed-idoc-monitoring/index.js',
   },
   '/self-service-actions': {
-    moduleName: 'SAP Joule',
+    moduleName: 'SAP AI Assistant',
     programName: 'self-service-actions/index.js',
   },
   '/admin/logs': {

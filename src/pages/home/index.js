@@ -14,8 +14,8 @@ const CARDS = [
   },
   {
     id: 'sap-joule',
-    title: 'SAP Joule',
-    desc: 'Query Sales Orders, Purchase Orders and more in natural language.',
+    title: 'SAP AI Assistant',
+    desc: 'Query Sales Orders in natural language.',
     Icon: MdSmartToy,
     path: '/self-service-actions',
     color: '#8b5cf6',
